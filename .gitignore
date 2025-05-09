@@ -1,5 +1,5 @@
 # --- Custom Weather_Agent ignores ---
-# 
+# client and server
 node_modules/
 dist/
 package-lock.json
