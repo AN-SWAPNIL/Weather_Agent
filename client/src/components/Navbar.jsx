@@ -28,6 +28,11 @@ export default function Navbar({ user, tab, setTab, onWeatherAIClick }) {
   return (
     <nav className="w-full bg-white/90 border-b border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm z-10">
       <div className="flex items-center gap-6">
+        <img
+          src="/weather.jpeg"
+          alt="Weather AI Logo"
+          className="h-8 w-8"
+        />
         <span
           className="text-xl font-bold text-blue-700 tracking-tight cursor-pointer"
           onClick={onWeatherAIClick}

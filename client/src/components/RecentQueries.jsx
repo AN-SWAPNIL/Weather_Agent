@@ -12,7 +12,7 @@ export default function RecentQueries({
       <h2 className="font-semibold text-lg mb-3 text-blue-700 ">
         Recent Sessions
       </h2>
-      <div className="space-y-2 max-h-[550px] overflow-y-auto flex-1 flex flex-col justify-center">
+      <div className="space-y-2 max-h-[1000px] overflow-y-auto flex-1 flex flex-col justify-center">
         {(!queries || queries.length === 0) && (
           <div className="text-gray-400 text-center py-8 flex-1 flex flex-col justify-center items-center">
             No recent sessions yet.
@@ -29,7 +29,7 @@ export default function RecentQueries({
                 onClick={() => onSessionSelect && onSessionSelect(item)}
               >
                 <div className="font-medium text-blue-800">
-                  {item.sessionName}
+                  {item.sessionName.length > 20? `${item.sessionName.slice(0, 20)}...` : item.sessionName}
                 </div>
                 <div className="text-gray-500 text-xs text-right">
                   {new Date(item.update_time).toLocaleString()}
