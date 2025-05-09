@@ -1,0 +1,76 @@
+# --- Custom Weather_Agent ignores ---
+# Frontend
+client/node_modules/
+client/dist/
+client/.env
+
+# Backend
+server/node_modules/
+server/dist/
+server/.env
+
+# Output
+coverage/
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+
+# Test output
+server/test/*.log
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+.DS_Store
+*.sw?
+
+# Dependency directories
+node_modules/
+
+# Cache and build output
+.cache/
+.parcel-cache
+.next
+.nuxt
+.vuepress/dist
+.temp
+.docusaurus
+
+# TypeScript cache
+*.tsbuildinfo
+
+# dotenv environment variable files
+.env
+.env.*
+
+# Optional cache files
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_*/
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Output of 'npm pack'
+*.tgz
+
+# Miscellaneous
+*.pid
+*.seed
+*.pid.lock

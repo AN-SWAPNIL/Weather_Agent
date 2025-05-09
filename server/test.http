@@ -1,0 +1,199 @@
+POST http://localhost:4000/users HTTP/1.1
+content-type: application/json
+
+{
+    "name": "sample",
+    "email": "tes@test.com",
+    "password": "password"
+}
+
+###
+GET http://localhost:4000/users HTTP/1.1
+content-type: application/json
+
+###
+POST http://localhost:4000/users/login HTTP/1.1
+content-type: application/json
+
+{
+    "email": "tes@test.com",
+    "password": "password"
+}
+
+###
+POST http://localhost:4000/users/location HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+{
+    "location": "Chittagong, Bangladesh"
+}
+
+###
+POST http://localhost:4000/api/query HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+{
+    "sessionId": "3e957bba-302e-4e1f-a317-764954273c93",
+    "query": "What yesterday be today's weather?"
+}
+
+###
+Response:
+{
+  "sessionId": "3e957bba-302e-4e1f-a317-764954273c93",
+  "sessionName": "What yesterday be today's weather?",
+  "location": "Dhaka, Bangladesh",
+  "update_time": "2025-05-09T05:18:33.844Z",
+  "message": "I need more information to accurately tell you what yesterday's weather was in Dhaka, Bangladesh.  The `default_api` tools don't directly provide \"yesterday's weather\". To get that information, I would need to use the `historyWeather` tool and specify a date range.  Could you clarify which date's weather you are interested in?\n"
+}
+
+###
+POST http://localhost:4000/api/query HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+{
+    "query": "Will it rain tomorrow?"
+}
+
+###
+Response:
+{
+  "sessionId": "793a0fd4-ff13-4831-b124-91aa116ac8b6",
+  "sessionName": "Will it rain tomorrow?",
+  "update_time": "2025-05-09T05:46:30.124Z",
+  "location": "Dhaka, Bangladesh",
+  "message": "Based on the forecast, there is a chance of light rain on May 11th, but the probability is low (0.14).  The rest of the forecast for tomorrow shows mostly clear skies.\n"
+}
+
+###
+GET http://localhost:4000/api/history HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+###
+Response:
+[
+  {
+    "sessionId": "9cdd9292-4cd9-498a-bd78-bcd4d93b439c",
+    "sessionName": "How much distance from my hometown to there?",
+    "update_time": "2025-05-08T22:07:38.570Z"
+  },
+  {
+    "sessionId": "bf4800f1-0882-4ed8-983c-9bd74880511f",
+    "sessionName": "What is today's weather in Dhaka?",
+    "update_time": "2025-05-08T22:08:40.009Z"
+  },
+  {
+    "sessionId": "7c16caf9-5e8f-4e85-9b42-a360a0fb3cc0",
+    "sessionName": "Is it will be safe to stay in CHittagong tomorrow",
+    "update_time": "2025-05-08T22:19:26.965Z"
+  },
+  {
+    "sessionId": "a68bb77f-98d8-4634-aa34-808d96f8a329",
+    "sessionName": "What is last week's weather in Dhaka?",
+    "update_time": "2025-05-08T22:19:54.195Z"
+  },
+  {
+    "sessionId": "cb75e3b9-ec04-4ee5-820a-f201aae1cd1c",
+    "sessionName": "What will be tommorrow's weather?",
+    "update_time": "2025-05-08T22:23:58.023Z"
+  },
+  {
+    "sessionId": "699887cd-5b88-4792-b178-2d59ca83a79e",
+    "sessionName": "What will be today's weather?",
+    "update_time": "2025-05-08T22:24:11.322Z"
+  },
+  {
+    "sessionId": "50373c7b-c456-416c-9ae0-8542f674564c",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-08T22:24:36.901Z"
+  },
+  {
+    "sessionId": "3e957bba-302e-4e1f-a317-764954273c93",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:34:48.891Z"
+  },
+  {
+    "sessionId": "bd01db2a-1808-4b58-97c0-0af479eca332",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:28:01.379Z"
+  },
+  {
+    "sessionId": "ddec9345-405b-408f-8fe4-37aa03dd45cc",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:28:06.227Z"
+  },
+  {
+    "sessionId": "21ff2091-cd1d-4127-bae8-09e7a0743fa2",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:29:06.695Z"
+  },
+  {
+    "sessionId": "8a20f9ad-2fb6-4941-9f46-99aba6659424",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:30:51.432Z"
+  },
+  {
+    "sessionId": "cb715851-2c3a-4125-a6c1-b217392d69fb",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:35:20.464Z"
+  },
+  {
+    "sessionId": "2cf5cd84-978f-4219-b4e0-7e71dd41bfce",
+    "sessionName": "What yesterday be today's weather?",
+    "update_time": "2025-05-09T05:45:56.058Z"
+  },
+  {
+    "sessionId": "793a0fd4-ff13-4831-b124-91aa116ac8b6",
+    "sessionName": "Will it rain tomorrow?",
+    "update_time": "2025-05-09T05:46:33.220Z"
+  }
+]
+
+###
+GET http://localhost:4000/api/history/793a0fd4-ff13-4831-b124-91aa116ac8b6 HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+###
+Response:
+{
+  "session_id": "793a0fd4-ff13-4831-b124-91aa116ac8b6",
+  "name": "Will it rain tomorrow?",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Will it rain tomorrow?",
+      "location": "Dhaka, Bangladesh",
+      "_id": "681d96b902a348a9e9199f2f",
+      "timestamp": "2025-05-09T05:46:33.220Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Based on the forecast, there is a chance of light rain on May 11th, but the probability is low (0.14).  The rest of the forecast for tomorrow shows mostly clear skies.\n",
+      "location": "Dhaka, Bangladesh",
+      "_id": "681d96b902a348a9e9199f30",
+      "timestamp": "2025-05-09T05:46:33.220Z"
+    }
+  ],
+  "_id": "681d96b602a348a9e9199e99",
+  "update_time": "2025-05-09T05:46:33.220Z"
+}
+
+###
+DELETE http://localhost:4000/api/history/793a0fd4-ff13-4831-b124-91aa116ac8b6 HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+### edit password
+PUT http://localhost:4000/users/editpassword HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+{
+    "oldPassword": "password",
+    "newPassword": "newpassword"
+}
