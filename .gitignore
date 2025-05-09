@@ -1,9 +1,4 @@
 # --- Custom Weather_Agent ignores ---
-# client and server
-node_modules/
-dist/
-package-lock.json
-
 # Output
 coverage/
 
@@ -69,3 +64,26 @@ node_modules/
 *.pid
 *.seed
 *.pid.lock
+
+# Ignore lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore build artifacts
+dist/
+
+# Ignore IDE-specific settings
+*.iml
+.idea/
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore OS-specific files
+Thumbs.db
+Desktop.ini
+
+# Ignore Vite cache
+.vite-cache/
