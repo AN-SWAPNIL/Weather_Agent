@@ -1,13 +1,8 @@
 # --- Custom Weather_Agent ignores ---
-# Frontend
-client/node_modules/
-client/dist/
-client/.env
-
-# Backend
-server/node_modules/
-server/dist/
-server/.env
+# 
+node_modules/
+dist/
+package-lock.json
 
 # Output
 coverage/
