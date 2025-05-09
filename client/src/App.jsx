@@ -32,15 +32,16 @@ export default function App() {
           path="/register"
           element={user ? <Navigate to="/weather" /> : <Register />}
         />
-        <Route
-          path="/weather"
-          element={
-            <PrivateRoute>
-              <Weather />
-            </PrivateRoute>
-          }
-        />
-        <Route path="/edit-password" element={<EditPassword />} />
+        <PrivateRoute>
+          <Route
+            path="/weather"
+            element={<Weather />}
+          />
+          <Route 
+            path="/edit-password" 
+            element={<EditPassword />} 
+          />
+        </PrivateRoute>
       </Routes>
     </Router>
   );
