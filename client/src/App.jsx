@@ -9,6 +9,7 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import Weather from "./pages/weather";
 import EditPassword from "./pages/edit-password";
+import NotFound from "./pages/NotFound"; // Import the NotFound component
 
 function PrivateRoute({ children }) {
   const user = window.localStorage.getItem("user");
@@ -32,16 +33,24 @@ export default function App() {
           path="/register"
           element={user ? <Navigate to="/weather" /> : <Register />}
         />
-        <PrivateRoute>
-          <Route
-            path="/weather"
-            element={<Weather />}
-          />
-          <Route 
-            path="/edit-password" 
-            element={<EditPassword />} 
-          />
-        </PrivateRoute>
+        <Route
+          path="/weather"
+          element={
+            <PrivateRoute>
+              <Weather />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/edit-password"
+          element={
+            <PrivateRoute>
+              <EditPassword />
+            </PrivateRoute>
+          }
+        />
+        {/* Default 404 Page */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
