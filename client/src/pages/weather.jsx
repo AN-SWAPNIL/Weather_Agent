@@ -18,20 +18,6 @@ export default function WeatherChatPage() {
   const [messages, setMessages] = useState([]); // messages for selected session
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const chatRef = useRef(null);
-
-  // Function to scroll chat to bottom
-  const scrollToBottom = () => {
-    if (chatRef.current) {
-      // Direct scroll to bottom
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-
-      // Force browser to recalculate layout and scroll again
-      window.requestAnimationFrame(() => {
-        chatRef.current.scrollTop = chatRef.current.scrollHeight + 100000000; // Add extra padding to ensure it goes all the way
-      });
-    }
-  };
 
   useEffect(() => {
     const userStr = window.localStorage.getItem("user");
@@ -59,27 +45,8 @@ export default function WeatherChatPage() {
       if (scrollTarget && scrollTarget.scrollIntoView) {
         scrollTarget.scrollIntoView({ behavior: "smooth", block: "end" });
       }
-      // Also use our direct method
-      scrollToBottom();
     }
   }, [messages, loading]);
-
-  // Set up MutationObserver to detect when content changes in the chat container
-  useEffect(() => {
-    if (chatRef.current) {
-      const observer = new MutationObserver(() => {
-        scrollToBottom();
-      });
-
-      observer.observe(chatRef.current, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-
-      return () => observer.disconnect();
-    }
-  }, []);
 
   const loadSessions = async () => {
     const response = await fetch("http://localhost:4000/api/history", {
@@ -120,22 +87,6 @@ export default function WeatherChatPage() {
       setMessages([]);
     }
     setLoading(false);
-
-    // Force scroll to bottom with multiple attempts to ensure it works
-    scrollToBottom();
-    // Try again after a longer delay to ensure DOM has fully updated
-    setTimeout(scrollToBottom, 300);
-    setTimeout(scrollToBottom, 600);
-    setTimeout(() => {
-      // One last attempt with direct DOM method
-      if (document.getElementById("chat-container")) {
-        const lastChild =
-          document.getElementById("chat-container").lastElementChild;
-        if (lastChild && lastChild.scrollIntoView) {
-          lastChild.scrollIntoView({ behavior: "smooth", block: "end" });
-        }
-      }
-    }, 800);
   };
 
   const handleSend = async (e) => {
@@ -193,10 +144,6 @@ export default function WeatherChatPage() {
     setLoading(false);
     // Refresh sessions list
     loadSessions();
-
-    // Force scroll to bottom after all operations are completed
-    scrollToBottom();
-    setTimeout(scrollToBottom, 300);
   };
 
   const toggleListening = () => {
@@ -287,7 +234,7 @@ export default function WeatherChatPage() {
         <div className="flex-1 flex flex-col">
           <div className="bg-white rounded-xl shadow-lg p-8 flex-1 flex flex-col border border-blue-100">
             <div className="mb-4 flex items-center justify-between">
-              <div className="bg-blue-50 p-4 rounded text-gray-700 flex-1">
+              <div className="bg-blue-50 p-4 rounded-lg text-gray-700 flex-1 shadow-sm">
                 <div className="flex items-center gap-2 font-bold text-lg">
                   <CloudSun className="h-7 w-7 text-blue-600" /> Weather AI
                   Assistant
@@ -301,12 +248,7 @@ export default function WeatherChatPage() {
                 ) : null}
               </div>
             </div>
-            <div
-              className="flex-1 overflow-y-auto mb-4 scroll-smooth"
-              ref={chatRef}
-              style={{ scrollBehavior: "smooth" }}
-              id="chat-container"
-            >
+            <div className="flex-1 overflow-y-auto mb-4 rounded-lg bg-gray-50/50">
               {messages.length === 0 && (
                 <div className="text-gray-400 text-center py-8">
                   No messages yet. Start the conversation!
@@ -325,10 +267,10 @@ export default function WeatherChatPage() {
                 />
               ))}
               {loading && (
-                <div className="text-center text-blue-500">Loading...</div>
+                <div className="text-center text-blue-500 py-2">
+                  <div className="inline-block animate-pulse">Loading...</div>
+                </div>
               )}
-              {/* Invisible element to scroll to */}
-              <div id="scroll-target" style={{ height: "1px" }}></div>
             </div>
             <form
               className="flex items-center gap-2 mt-2"
@@ -338,29 +280,48 @@ export default function WeatherChatPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ask about the weather..."
-                className="flex-1"
+                className="flex-1 shadow-sm"
                 disabled={loading}
               />
-              <Button type="button" variant="ghost" onClick={toggleListening}>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={toggleListening}
+                className={`${
+                  listening
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-blue-500 hover:bg-blue-600"
+                } text-white shadow-sm`}
+              >
                 <Mic
-                  className={listening ? "animate-pulse text-blue-500" : ""}
+                  className={`h-5 w-5 ${listening ? "animate-pulse" : ""}`}
                 />
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
-                <Send />
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={loading}
+                className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
+              >
+                <Send className="h-5 w-5" />
               </Button>
             </form>
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex items-center justify-between bg-gray-50/50 p-3 rounded-lg">
               <span className="text-sm text-gray-600">
-                Default Location: Dhaka, Bangladesh
+                Default Location: {location || "Not set"}
               </span>
               <div className="flex gap-2">
                 <Input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-48 h-8 text-sm"
+                  className="w-48 text-sm shadow-sm"
+                  placeholder="Enter location..."
                 />
-                <Button size="sm" onClick={handleSaveLocation}>
+                <Button
+                  size="sm"
+                  onClick={handleSaveLocation}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
                   <Save className="h-4 w-4 mr-1" /> Save
                 </Button>
               </div>
@@ -368,7 +329,10 @@ export default function WeatherChatPage() {
           </div>
         </div>
       </div>
-      <footer className="mt-8 text-center text-gray-500 text-sm">
+      <footer
+        id="scroll-target"
+        className="mt-8 text-center text-gray-500 text-sm py-3 bg-white/50"
+      >
         Powered by OpenWeatherMap, Google Gemini, and ElevenLabs
       </footer>
     </div>
