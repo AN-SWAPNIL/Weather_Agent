@@ -1,3 +1,4 @@
+### register
 POST http://localhost:4000/users HTTP/1.1
 content-type: application/json
 
@@ -7,11 +8,11 @@ content-type: application/json
     "password": "password"
 }
 
-###
+### get all users
 GET http://localhost:4000/users HTTP/1.1
 content-type: application/json
 
-###
+### login
 POST http://localhost:4000/users/login HTTP/1.1
 content-type: application/json
 
@@ -20,7 +21,7 @@ content-type: application/json
     "password": "password"
 }
 
-###
+### update user location
 POST http://localhost:4000/users/location HTTP/1.1
 content-type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
@@ -29,10 +30,20 @@ authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0
     "location": "Chittagong, Bangladesh"
 }
 
-###
-POST http://localhost:4000/api/query HTTP/1.1
+### edit password
+PUT http://localhost:4000/users/editpassword HTTP/1.1
 content-type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+{
+    "oldPassword": "password",
+    "newPassword": "newpassword"
+}
+
+### old session query
+POST http://localhost:4000/api/query HTTP/1.1
+content-type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0Nzg1OTkwMiwiZXhwIjoxNzUwNDUxOTAyfQ.n6F3OmjH8LU4PVbABFwCRBhDEvDJiC5MTbVLiAnyjuE
 
 {
     "sessionId": "3e957bba-302e-4e1f-a317-764954273c93",
@@ -49,7 +60,7 @@ Response:
   "message": "I need more information to accurately tell you what yesterday's weather was in Dhaka, Bangladesh.  The `default_api` tools don't directly provide \"yesterday's weather\". To get that information, I would need to use the `historyWeather` tool and specify a date range.  Could you clarify which date's weather you are interested in?\n"
 }
 
-###
+### new session query
 POST http://localhost:4000/api/query HTTP/1.1
 content-type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
@@ -68,7 +79,7 @@ Response:
   "message": "Based on the forecast, there is a chance of light rain on May 11th, but the probability is low (0.14).  The rest of the forecast for tomorrow shows mostly clear skies.\n"
 }
 
-###
+### get all sessions
 GET http://localhost:4000/api/history HTTP/1.1
 content-type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
@@ -153,7 +164,7 @@ Response:
   }
 ]
 
-###
+### get session by id
 GET http://localhost:4000/api/history/793a0fd4-ff13-4831-b124-91aa116ac8b6 HTTP/1.1
 content-type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
@@ -183,17 +194,75 @@ Response:
   "update_time": "2025-05-09T05:46:33.220Z"
 }
 
-###
-DELETE http://localhost:4000/api/history/793a0fd4-ff13-4831-b124-91aa116ac8b6 HTTP/1.1
+### delete session by id
+DELETE http://localhost:4000/api/history/3e957bba-302e-4e1f-a317-764954273c93 HTTP/1.1
 content-type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
 
-### edit password
-PUT http://localhost:4000/users/editpassword HTTP/1.1
-content-type: application/json
-authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0NjczODEwNSwiZXhwIjoxNzQ5MzMwMTA1fQ.UHYZNNAaBnEzhWLb-qB86R5gojs-mRWhZHNjjSv2t6A
+
+### transcribe audio
+POST http://localhost:4000/audio/transcribe HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0Nzg0NDM4MSwiZXhwIjoxNzUwNDM2MzgxfQ.yO77UXQq1obu9heccB8tM_P3ltcyLBM1t2QGKHfI3UI
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="audio"; filename="record.mp3"
+Content-Type: audio/mpeg
+
+< ./data/record.wav
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+
+###
+Response:
+{
+  "success": true,
+  "transcript": {
+    "success": true,
+    "transcript": "Hello there, Hello. Hello there. Hello.",
+    "language": "en",
+    "audio_duration": 3.352,
+    "confidence": 0.9
+  }
+}
+
+### synthesize audio
+POST http://localhost:4000/audio/synthesize
+Content-Type: application/json
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0Nzg1OTkwMiwiZXhwIjoxNzUwNDUxOTAyfQ.n6F3OmjH8LU4PVbABFwCRBhDEvDJiC5MTbVLiAnyjuE
 
 {
-    "oldPassword": "password",
-    "newPassword": "newpassword"
+    "text": "Hello there! Today is a beautiful day."
+}
+
+### audio weather query (combines STT + weather API + TTS)
+POST http://localhost:4000/audio/query HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0Nzg1OTkwMiwiZXhwIjoxNzUwNDUxOTAyfQ.n6F3OmjH8LU4PVbABFwCRBhDEvDJiC5MTbVLiAnyjuE
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="audio"; filename="record.wav"
+Content-Type: audio/mpeg
+
+< ./data/record.wav
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="sessionId"
+
+3e957bba-302e-4e1f-a317-764954273c93
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="additionalParam"
+
+Some additional data if needed
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+Response:
+{
+  "sessionId": "3e957bba-302e-4e1f-a317-764954273c93",
+  "sessionName": "What is the weather like?",
+  "update_time": "2025-05-22T10:00:00.124Z",
+  "location": "Dhaka, Bangladesh",
+  "query": "What is the weather like?",
+  "message": "The weather response text goes here",
+  "audio_reply": "base64-encoded-audio-data"
 }

@@ -6,11 +6,11 @@ import errorHandler from "./middlewares/errorHandler.js";
 import notFound from "./middlewares/notFound.js";
 
 // import routes
-import users from "./routes/user.router.js";
-import weather from "./routes/weather.router.js";
+import users from "./routes/user.route.js";
+import weather from "./routes/weather.route.js";
+import audio from "./routes/audio.route.js";
 
 // essentials
-
 import morgan from "morgan";
 import helmet from "helmet";
 import cors from "cors";
@@ -23,16 +23,15 @@ app.use(express.json());
 dotenv.config();
 
 // routes
-
 app.get("/", (req, res) => {
-  res.send("Hello from express`");
+  res.send("Hello from express");
 });
 
 app.use("/users", users);
-
 app.use("/api", weather);
+app.use("/audio", audio);
 
 app.use(notFound);
-
 app.use(errorHandler);
+
 export default app;

@@ -1,0 +1,201 @@
+// filepath: /mnt/AN_Swapnil_D/Codes/SocioFi/Weather_Agent/server/controllers/audio.controller.js
+import { transcribe, textToSpeech } from "../services/audio.service.js";
+import { StatusCodes } from "http-status-codes";
+import fs from "fs-extra";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+/**
+ * Controller for speech-to-text functionality
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const transcribeAudio = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Audio file is required",
+      });
+    }
+
+    const transcript = await transcribe(req.file);
+
+    // Delete the temporary file after transcription
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Error deleting temporary file:", err);
+    });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      transcript,
+    });
+  } catch (error) {
+    console.error("Error transcribing audio:", error);
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Error deleting temporary file:", err);
+    });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to transcribe audio",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Controller for text-to-speech functionality
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const synthesizeSpeech = async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Text is required for speech synthesis",
+      });
+    }
+
+    // Generate a unique filename
+    const outputFilename = `tts-${Date.now()}.wav`;
+    const outputPath = path.join(
+      __dirname,
+      "../data/downloads",
+      outputFilename
+    );
+
+    // Ensure the directory exists
+    await fs.ensureDir(path.dirname(outputPath));
+
+    // Save audio to file
+    const result = await textToSpeech(text, outputPath);
+
+    // After file is saved, send it to the client
+    const stat = fs.statSync(outputPath);
+    res.setHeader("Content-Length", stat.size);
+    res.setHeader("Content-Type", "audio/mp3");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${outputFilename}`
+    );
+
+    // Create read stream from the saved file and pipe to response
+    const readStream = fs.createReadStream(outputPath);
+    readStream.pipe(res);
+  } catch (error) {
+    console.error("Error in text-to-speech:", error);
+    if (!res.headersSent) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to synthesize speech",
+        error: error.message,
+      });
+    }
+  }
+};
+
+/**
+ * Controller for handling audio weather queries with file upload
+ * This function combines transcription, weather query processing, and speech synthesis
+ * Uses multipart/form-data with an "audio" field containing the audio file
+ *
+ * @param {Object} req - Express request object with file from multer
+ * @param {Object} res - Express response object
+ */
+export const queryAudioFile = async (req, res) => {
+  try {
+    const sessionId = req.body.sessionId;
+
+    // Access user from req.user set by UserMiddleware
+    if (!req.user) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    console.log(
+      `Processing file upload audio query with sessionId: ${sessionId}`
+    );
+    // if (Object.keys(additionalParams).length > 0) {
+    //   console.log("Additional parameters:", additionalParams);
+    // }
+
+    // Check if audio file is provided
+    if (!req.file) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Audio file is required for this endpoint",
+      });
+    }
+
+    // Step 1: Transcribe the audio using Azure Speech-to-Text
+    const transcriptionResult = await transcribe(req.file);
+
+    if (!transcriptionResult.success) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Failed to transcribe audio",
+      });
+    }
+
+    const query = transcriptionResult.transcript;
+
+    console.log(
+      `Processing weather query: "${query}" for user: ${req.user._id}`
+    );
+
+    // Delete the temporary audio file after transcription
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Error deleting temporary file:", err);
+    });
+
+    // Step 2: Process the text query using the weather service
+    const { queryExecutor } = await import(
+      "../controllers/weather.controller.js"
+    );
+    const weatherResponse = await queryExecutor(req.user, sessionId, query);
+    console.log("Query processed successfully:", weatherResponse);
+
+    // Step 3: Convert the weather response text to speech using Azure Text-to-Speech
+    const outputFilename = `tts-${Date.now()}.wav`;
+    const outputPath = path.join(
+      __dirname,
+      "../data/downloads",
+      outputFilename
+    );
+
+    // Ensure the directory exists
+    await fs.ensureDir(path.dirname(outputPath));
+    // Generate and save audio to file
+    await textToSpeech(weatherResponse.message, outputPath);
+
+    // Step 4: Read the generated audio file and send it with the response
+    const audioData = fs.readFileSync(outputPath);
+    const base64Audio = audioData.toString("base64");
+
+    // Include both the text and audio responses, along with any additional parameters
+    const response = {
+      ...weatherResponse,
+      query: query,
+      audio_reply: base64Audio,
+    };
+
+    // Return the combined response
+    return res.status(StatusCodes.OK).json(response);
+  } catch (error) {
+    console.log("Error in file upload audio query:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to process audio file query",
+      error: error.message,
+    });
+  }
+}

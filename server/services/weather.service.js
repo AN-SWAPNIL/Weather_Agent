@@ -9,17 +9,15 @@ import { MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 
 config();
 const llmModel = new ChatGoogleGenerativeAI({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.0-flash",
   apiKey: process.env.GEMINI_API_KEY,
   temperature: 0.7,
 });
 
-//   https://api.openweathermap.org/data/2.5/forecast/daily?q={city name}&cnt={cnt}&appid={API key}
-
 /*
 API calls
 
-api.openweathermap.org/data/2.5/forecast/daily?q={city name}&cnt={cnt}&appid={API key}
+https://api.openweathermap.org/data/2.5/forecast/daily?q={city name}&cnt={cnt}&appid={API key}
 
 Parameters
 q	required	City name, state code and country code divided by comma, use ISO 3166 country codes. You can specify the parameter not only in English. In this case, the API response should be returned in the same language as the language of requested location name if the location is in our predefined list of more than 200,000 locations.
@@ -176,7 +174,7 @@ const llmCall = async (state) => {
     {
       role: "system",
       content: `
-        You are Weather AI, a friendly assistant for weather-related questions using tools.
+        You are Weather AI, a friendly assistant for weather-related questions using tools. Only response the query's answer, not the User's information.
 
         **Guidelines:**
         - Be clear, concise, and human-friendly.

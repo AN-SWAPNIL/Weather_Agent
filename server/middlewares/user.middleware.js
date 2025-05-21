@@ -2,7 +2,17 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 
 async function UserMiddleware(req, res, next) {
-  const token = req.headers.authorization;
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    console.error("No authorization header provided");
+    return res.status(401).json({ error: "Authorization header is required" });
+  }
+
+  // Extract token from "Bearer token" format if needed
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -20,14 +30,21 @@ async function UserMiddleware(req, res, next) {
     if (!req.body) {
       req.body = {};
     }
-    req.body.user = user;
+    req.body = { ...req.body, user: user };
+
+    // Also set req.user for standard middleware pattern
+    req.user = user;
+
+    console.log("Request updated with user information");
+
     return next();
   } catch (e) {
     console.error("Error in UserMiddleware:", e.message);
     if (!req.body) {
       req.body = {};
     }
-    req.body.user = null;
+    req.body = { ...req.body, user: null };
+    req.user = null;
     return res.status(401).json({ error: "Unauthorized" });
   }
 }
