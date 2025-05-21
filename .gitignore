@@ -10,6 +10,10 @@ coverage/
 # Test output
 server/test/*.log
 
+# Data
+server/data/uploads/
+server/data/downloads/
+
 # Logs
 logs
 *.log
