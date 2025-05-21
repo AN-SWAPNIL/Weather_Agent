@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Send, Mic, Save, CloudSun } from "lucide-react";
 import Sidebar from "../components/Sidebar";
+import { set } from "react-hook-form";
 
 export default function WeatherChatPage() {
   const [user, setUser] = useState(null);
@@ -18,6 +19,19 @@ export default function WeatherChatPage() {
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const chatRef = useRef(null);
+
+  // Function to scroll chat to bottom
+  const scrollToBottom = () => {
+    if (chatRef.current) {
+      // Direct scroll to bottom
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+
+      // Force browser to recalculate layout and scroll again
+      window.requestAnimationFrame(() => {
+        chatRef.current.scrollTop = chatRef.current.scrollHeight + 100000000; // Add extra padding to ensure it goes all the way
+      });
+    }
+  };
 
   useEffect(() => {
     const userStr = window.localStorage.getItem("user");
@@ -37,11 +51,35 @@ export default function WeatherChatPage() {
     }
   }, [selectedSession]);
 
+  // Add a direct DOM method to scroll the chat container
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Try using scrollIntoView if it exists
+      const scrollTarget = document.getElementById("scroll-target");
+      if (scrollTarget && scrollTarget.scrollIntoView) {
+        scrollTarget.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+      // Also use our direct method
+      scrollToBottom();
+    }
+  }, [messages, loading]);
+
+  // Set up MutationObserver to detect when content changes in the chat container
   useEffect(() => {
     if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      const observer = new MutationObserver(() => {
+        scrollToBottom();
+      });
+
+      observer.observe(chatRef.current, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      return () => observer.disconnect();
     }
-  }, [messages]);
+  }, []);
 
   const loadSessions = async () => {
     const response = await fetch("http://localhost:4000/api/history", {
@@ -82,14 +120,39 @@ export default function WeatherChatPage() {
       setMessages([]);
     }
     setLoading(false);
+
+    // Force scroll to bottom with multiple attempts to ensure it works
+    scrollToBottom();
+    // Try again after a longer delay to ensure DOM has fully updated
+    setTimeout(scrollToBottom, 300);
+    setTimeout(scrollToBottom, 600);
+    setTimeout(() => {
+      // One last attempt with direct DOM method
+      if (document.getElementById("chat-container")) {
+        const lastChild =
+          document.getElementById("chat-container").lastElementChild;
+        if (lastChild && lastChild.scrollIntoView) {
+          lastChild.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+      }
+    }, 800);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
+    setMessages((msgs) => [
+      ...msgs,
+      {
+        role: "user",
+        content: query,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
     setLoading(true);
     let sessionId = selectedSession ? selectedSession.sessionId : undefined;
     const body = sessionId ? { sessionId, query } : { query };
+    setQuery("");
     const response = await fetch("http://localhost:4000/api/query", {
       method: "POST",
       headers: {
@@ -127,10 +190,13 @@ export default function WeatherChatPage() {
       // Reload messages for current session
       await loadSessionMessages(sessionId);
     }
-    setQuery("");
     setLoading(false);
     // Refresh sessions list
     loadSessions();
+
+    // Force scroll to bottom after all operations are completed
+    scrollToBottom();
+    setTimeout(scrollToBottom, 300);
   };
 
   const toggleListening = () => {
@@ -162,7 +228,12 @@ export default function WeatherChatPage() {
   };
 
   const handleSessionSelect = (session) => {
+    if (selectedSession && selectedSession.sessionId === session.sessionId)
+      return; // Already selected
+    setQuery("");
+    setMessages([]);
     setSelectedSession(session);
+    loadSessionMessages(session.sessionId);
   };
 
   const handleDeleteSession = async (sessionId) => {
@@ -196,14 +267,13 @@ export default function WeatherChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-green-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-green-100 flex flex-col pt-14">
       <Navbar
         user={user}
         tab={null}
         setTab={() => {}}
         onWeatherAIClick={() => setSidebarOpen(!sidebarOpen)}
       />
-
       <div className="flex w-full max-w-5xl mx-auto gap-6 flex-1 p-4">
         <Sidebar
           open={sidebarOpen}
@@ -222,19 +292,21 @@ export default function WeatherChatPage() {
                   <CloudSun className="h-7 w-7 text-blue-600" /> Weather AI
                   Assistant
                 </div>
-                {selectedSession==null?
-                (<ul className="list-disc ml-6 mt-2 text-sm text-gray-600">
-                  <li>"Will it rain today in New York?"</li>
-                  <li>"How hot will it be tomorrow in Tokyo?"</li>
-                  <li>"Was it sunny yesterday in London?"</li>
-                </ul>)
-                : null}
+                {selectedSession == null ? (
+                  <ul className="list-disc ml-6 mt-2 text-sm text-gray-600">
+                    <li>"Will it rain today in New York?"</li>
+                    <li>"How hot will it be tomorrow in Tokyo?"</li>
+                    <li>"Was it sunny yesterday in London?"</li>
+                  </ul>
+                ) : null}
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto mb-4" ref={chatRef}>
-              {loading && (
-                <div className="text-center text-blue-500">Loading...</div>
-              )}
+            <div
+              className="flex-1 overflow-y-auto mb-4 scroll-smooth"
+              ref={chatRef}
+              style={{ scrollBehavior: "smooth" }}
+              id="chat-container"
+            >
               {messages.length === 0 && (
                 <div className="text-gray-400 text-center py-8">
                   No messages yet. Start the conversation!
@@ -245,10 +317,18 @@ export default function WeatherChatPage() {
                   key={i}
                   role={msg.role}
                   content={msg.content}
-                  location={msg.location || location}
+                  location={
+                    msg.location ||
+                    JSON.parse(window.localStorage.getItem("user")).location
+                  }
                   timestamp={msg.timestamp}
                 />
               ))}
+              {loading && (
+                <div className="text-center text-blue-500">Loading...</div>
+              )}
+              {/* Invisible element to scroll to */}
+              <div id="scroll-target" style={{ height: "1px" }}></div>
             </div>
             <form
               className="flex items-center gap-2 mt-2"
@@ -271,7 +351,9 @@ export default function WeatherChatPage() {
               </Button>
             </form>
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-gray-600">Default Location:</span>
+              <span className="text-sm text-gray-600">
+                Default Location: Dhaka, Bangladesh
+              </span>
               <div className="flex gap-2">
                 <Input
                   value={location}
