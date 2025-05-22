@@ -19,119 +19,67 @@ export default function VoiceInteractionModal({
 }) {
   const [audioError, setAudioError] = useState(false);
   const audioRef = useRef(null);
-  const audioUrlRef = useRef(null);
-
-  // Clean up audio URL when component unmounts or audio changes
-  useEffect(() => {
-    return () => {
-      if (audioUrlRef.current) {
-        URL.revokeObjectURL(audioUrlRef.current);
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-    };
-  }, []);
 
   // Handle new audio data
   useEffect(() => {
     if (!audioBase64 || !isOpen) return;
 
-    const setupAudio = async () => {
-      try {
-        // Clean up previous audio
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = "";
-        }
-        if (audioUrlRef.current) {
-          URL.revokeObjectURL(audioUrlRef.current);
-        }
+    try {
+      // Clean up previous audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
 
-        // Remove any existing data URI prefix if present
-        const cleanBase64 = audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-
-        // Convert base64 to blob
-        const byteCharacters = atob(cleanBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: "audio/wav" });
-
-        // Create URL for blob
-        const url = URL.createObjectURL(blob);
-        audioUrlRef.current = url;
-
-        // Create new audio element
-        const audio = new Audio();
-        audio.src = url;
-
-        // Wait for audio to be loaded
-        await new Promise((resolve, reject) => {
-          audio.addEventListener("canplaythrough", resolve, { once: true });
-          audio.addEventListener("error", reject, { once: true });
-        });
-
-        audioRef.current = audio;
-
-        // Auto play the audio
-        await audio.play();
-      } catch (error) {
-        console.error("Error processing audio:", error);
+      // Create new audio element with data URI
+      const audio = new Audio(`data:audio/wav;base64,${audioBase64}`);
+      
+      // Set up event handlers
+      audio.onplay = () => {
+        setIsPlaying(true);
+        setAudioError(false);
+      };
+      
+      audio.onpause = () => {
+        setIsPlaying(false);
+      };
+      
+      audio.onended = () => {
+        setIsPlaying(false);
+        setWaitingForResponse(false);
+      };
+      
+      audio.onerror = () => {
+        console.error("Audio playback error:", audio.error);
+        setIsPlaying(false);
         setAudioError(true);
         setWaitingForResponse(false);
-      }
-    };
+      };
 
-    setupAudio();
-  }, [audioBase64, isOpen]);
+      audioRef.current = audio;
 
-  // Set up audio event listeners
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+      // Auto play the audio
+      audio.play().catch(error => {
+        console.error("Error playing audio:", error);
+        setAudioError(true);
+      });
 
-    const handlePlay = () => {
-      setIsPlaying(true);
-      setAudioError(false);
-    };
-    const handlePause = () => setIsPlaying(false);
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setWaitingForResponse(false);
-    };
-    const handleError = () => {
-      console.error("Audio playback error:", audio.error);
-      setIsPlaying(false);
+    } catch (error) {
+      console.error("Error setting up audio:", error);
       setAudioError(true);
       setWaitingForResponse(false);
-    };
-
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("pause", handlePause);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
-
-    return () => {
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("pause", handlePause);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-    };
-  }, []);
+    }
+  }, [audioBase64, isOpen]);
 
   // Toggle audio playback
-  const togglePlayback = async () => {
+  const togglePlayback = () => {
     if (!audioRef.current) return;
 
     try {
       if (isPlaying) {
-        await audioRef.current.pause();
+        audioRef.current.pause();
       } else {
-        await audioRef.current.play();
+        audioRef.current.play();
       }
     } catch (error) {
       console.error("Error toggling playback:", error);

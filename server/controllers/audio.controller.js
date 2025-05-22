@@ -123,7 +123,7 @@ export const queryAudioFile = async (req, res) => {
     }
 
     console.log(
-      `Processing file upload audio query with sessionId: ${sessionId}`
+      `Processing file upload audio query with sessionId: ${sessionId || "No sessionId provided"}`
     );
     // if (Object.keys(additionalParams).length > 0) {
     //   console.log("Additional parameters:", additionalParams);
