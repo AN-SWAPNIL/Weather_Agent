@@ -1,24 +1,31 @@
-import React, { useRef, useState, useEffect } from "react";
+// filepath: /mnt/AN_Swapnil_D/Codes/SocioFi/Weather_Agent/client/src/pages/weather.jsx
+import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
-import RecentQueries from "../components/RecentQueries";
-import WeatherMessage from "../components/WeatherMessage";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Send, Mic, Save, CloudSun } from "lucide-react";
 import Sidebar from "../components/Sidebar";
-import { set } from "react-hook-form";
+import { ToastContainer, useToast } from "../components/ui/toast";
 
+// Newly created components
+import ChatContainer from "../components/ChatContainer";
+import ChatInput from "../components/ChatInput";
+import AudioPlayer from "../components/AudioPlayer";
+import LocationSetting from "../components/LocationSetting";
+import SessionManager from "../components/SessionManager";
+
+// Main component
 export default function WeatherChatPage() {
   const [user, setUser] = useState(null);
-  const [query, setQuery] = useState("");
-  const [listening, setListening] = useState(false);
   const [location, setLocation] = useState("");
   const [sessions, setSessions] = useState([]); // session list
   const [selectedSession, setSelectedSession] = useState(null); // session object
   const [messages, setMessages] = useState([]); // messages for selected session
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [audioBase64, setAudioBase64] = useState(null);
 
+  // Toast notifications
+  const { toasts, addToast, removeToast } = useToast();
+
+  // Load user data from local storage on initial render
   useEffect(() => {
     const userStr = window.localStorage.getItem("user");
     if (userStr) {
@@ -26,315 +33,322 @@ export default function WeatherChatPage() {
       setUser(user);
       setLocation(user.location || "");
     }
-    loadSessions();
   }, []);
 
-  useEffect(() => {
-    if (selectedSession) {
-      loadSessionMessages(selectedSession.sessionId);
-    } else {
-      setMessages([]);
-    }
-  }, [selectedSession]);
+  // Render function that uses the SessionManager
+  const renderWithSessionAPI = (sessionApi) => {
+    // Load sessions on component mount
+    useEffect(() => {
+      const loadInitialData = async () => {
+        const sessions = await sessionApi.loadSessions();
+        setSessions(sessions);
 
-  // Add a direct DOM method to scroll the chat container
-  useEffect(() => {
-    if (messages.length > 0) {
-      // Try using scrollIntoView if it exists
-      const scrollTarget = document.getElementById("scroll-target");
-      if (scrollTarget && scrollTarget.scrollIntoView) {
-        scrollTarget.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
-    }
-  }, [messages, loading]);
+        // Auto-select the most recent session
+        if (sessions.length > 0 && !selectedSession) {
+          setSelectedSession(sessions[0]);
+          const messages = await sessionApi.loadSessionMessages(
+            sessions[0].sessionId
+          );
+          setMessages(messages);
+        }
+      };
 
-  const loadSessions = async () => {
-    const response = await fetch("http://localhost:4000/api/history", {
-      headers: {
-        "Content-Type": "application/json",
-        authorization: localStorage.getItem("token"),
-      },
-    });
-    if (response.ok) {
-      const data = await response.json();
-      // Sort by update_time in descending order (most recent first)
-      const sortedData = data.sort(
-        (a, b) => new Date(b.update_time) - new Date(a.update_time)
-      );
-      setSessions(sortedData);
-      // Auto-select the most recent session
-      if (sortedData.length > 0 && !selectedSession) {
-        setSelectedSession(sortedData[0]);
-      }
-    }
-  };
+      loadInitialData();
+    }, []);
 
-  const loadSessionMessages = async (sessionId) => {
-    setLoading(true);
-    const response = await fetch(
-      `http://localhost:4000/api/history/${sessionId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          authorization: localStorage.getItem("token"),
-        },
-      }
-    );
-    if (response.ok) {
-      const data = await response.json();
-      setMessages(data.messages || []);
-    } else {
-      setMessages([]);
-    }
-    setLoading(false);
-  };
+    // Load messages when selected session changes
+    useEffect(() => {
+      const loadMessages = async () => {
+        if (selectedSession) {
+          setLoading(true);
+          const messages = await sessionApi.loadSessionMessages(
+            selectedSession.sessionId
+          );
+          setMessages(messages);
+          setLoading(false);
+        } else {
+          setMessages([]);
+        }
+      };
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setMessages((msgs) => [
-      ...msgs,
-      {
-        role: "user",
-        content: query,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-    setLoading(true);
-    let sessionId = selectedSession ? selectedSession.sessionId : undefined;
-    const body = sessionId ? { sessionId, query } : { query };
-    setQuery("");
-    const response = await fetch("http://localhost:4000/api/query", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        authorization: localStorage.getItem("token"),
-      },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
+      loadMessages();
+    }, [selectedSession]);
+
+    // Send text message handler
+    const handleSendMessage = async (query) => {
       setMessages((msgs) => [
         ...msgs,
         {
-          role: "system",
-          content: errorData.message,
+          role: "user",
+          content: query,
           timestamp: new Date().toISOString(),
         },
       ]);
+
+      setLoading(true);
+      const sessionId = selectedSession ? selectedSession.sessionId : undefined;
+
+      const response = await sessionApi.sendTextQuery(query, sessionId);
+
+      if (response.error) {
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            role: "system",
+            content: response.error,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
+
+      // If new session, add to sessions and select it
+      if (!sessionId && response.sessionId) {
+        const newSession = {
+          sessionId: response.sessionId,
+          sessionName: response.sessionName,
+          update_time: response.update_time,
+        };
+        setSessions((prev) => [newSession, ...prev]);
+        setSelectedSession(newSession);
+
+        // Load messages for new session
+        const messages = await sessionApi.loadSessionMessages(
+          response.sessionId
+        );
+        setMessages(messages);
+      } else {
+        // Reload messages for current session
+        const messages = await sessionApi.loadSessionMessages(sessionId);
+        setMessages(messages);
+      }
+
       setLoading(false);
-      return;
-    }
-    const data = await response.json();
-    // If new session, add to sessions and select it
-    if (!sessionId && data.sessionId) {
-      const newSession = {
-        sessionId: data.sessionId,
-        sessionName: data.sessionName,
-        update_time: data.update_time,
-      };
-      setSessions((prev) => [newSession, ...prev]);
-      setSelectedSession(newSession);
-      // Load messages for new session
-      await loadSessionMessages(data.sessionId);
-    } else {
-      // Reload messages for current session
-      await loadSessionMessages(sessionId);
-    }
-    setLoading(false);
-    // Refresh sessions list
-    loadSessions();
-  };
+      // Refresh sessions list
+      const updatedSessions = await sessionApi.loadSessions();
+      setSessions(updatedSessions);
+    };
 
-  const toggleListening = () => {
-    setListening(!listening);
-    if (!listening) {
-      setTimeout(() => setListening(false), 3000);
-    }
-  };
+    // Handle audio recording submission
+    const handleAudioRecorded = async (audioBlob) => {
+      setLoading(true);
 
-  const handleSaveLocation = async () => {
-    const response = await fetch("http://localhost:4000/users/location", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        authorization: localStorage.getItem("token"),
-      },
-      body: JSON.stringify({ location }),
-    });
-    if (response.ok) {
-      setUser((prevUser) => ({ ...prevUser, location }));
-      window.localStorage.setItem(
-        "user",
-        JSON.stringify({ ...user, location })
-      );
-      alert(`Default location saved: ${location}`);
-    } else {
-      alert("Failed to save location.");
-    }
-  };
-
-  const handleSessionSelect = (session) => {
-    if (selectedSession && selectedSession.sessionId === session.sessionId)
-      return; // Already selected
-    setQuery("");
-    setMessages([]);
-    setSelectedSession(session);
-    loadSessionMessages(session.sessionId);
-  };
-
-  const handleDeleteSession = async (sessionId) => {
-    if (!window.confirm("Are you sure you want to delete this session?"))
-      return;
-    const response = await fetch(
-      `http://localhost:4000/api/history/${sessionId}`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: localStorage.getItem("token"),
+      // Add a loading message to show typing indicator
+      setMessages((msgs) => [
+        ...msgs,
+        {
+          role: "user",
+          content: "Recording audio...",
+          timestamp: new Date().toISOString(),
+          isAudioLoading: true,
         },
-      }
-    );
-    if (response.ok) {
-      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
-      if (selectedSession && selectedSession.sessionId === sessionId) {
-        setSelectedSession(null);
-        setMessages([]);
-      }
-    } else {
-      alert("Failed to delete session.");
-    }
-  };
+      ]);
 
-  const handleNewSession = () => {
-    setSelectedSession(null);
-    setMessages([]);
-    setQuery("");
-  };
+      try {
+        const sessionId = selectedSession
+          ? selectedSession.sessionId
+          : undefined;
+        const data = await sessionApi.sendAudioQuery(audioBlob, sessionId);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-green-100 flex flex-col pt-14">
-      <Navbar
-        user={user}
-        tab={null}
-        setTab={() => {}}
-        onWeatherAIClick={() => setSidebarOpen(!sidebarOpen)}
-      />
-      <div className="flex w-full max-w-5xl mx-auto gap-6 flex-1 p-4">
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          queries={sessions}
-          onSessionSelect={handleSessionSelect}
-          onDeleteSession={handleDeleteSession}
-          onNewSession={handleNewSession}
+        // Remove the loading message
+        setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
+
+        // Add the transcribed query from the user
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            role: "user",
+            content: data.query,
+            timestamp: new Date().toISOString(),
+            location: data.location,
+          },
+        ]);
+
+        // Add the response from the assistant
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            role: "assistant",
+            content: data.message,
+            timestamp: new Date().toISOString(),
+            location: data.location,
+          },
+        ]);
+
+        // Play the audio response if available
+        if (data.audio_reply) {
+          setAudioBase64(data.audio_reply);
+        }
+
+        // If this is a new session, update the sessions list
+        if (!selectedSession && data.sessionId) {
+          const newSession = {
+            sessionId: data.sessionId,
+            sessionName: data.sessionName,
+            update_time: data.update_time,
+          };
+          setSessions((prev) => [newSession, ...prev]);
+          setSelectedSession(newSession);
+        } else {
+          // Refresh the sessions list
+          const updatedSessions = await sessionApi.loadSessions();
+          setSessions(updatedSessions);
+        }
+      } catch (error) {
+        console.error("Error processing audio query:", error);
+
+        // Remove the loading message
+        setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
+
+        // Show error message
+        setMessages((msgs) => [
+          ...msgs,
+          {
+            role: "system",
+            content:
+              "Sorry, there was an error processing your voice query. Please try again.",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Save user's default location
+    const handleSaveLocation = async () => {
+      const success = await sessionApi.saveLocation(location);
+
+      if (success) {
+        setUser((prevUser) => ({ ...prevUser, location }));
+        window.localStorage.setItem(
+          "user",
+          JSON.stringify({ ...user, location })
+        );
+        addToast({
+          message: `Default location saved: ${location}`,
+          type: "success",
+        });
+      } else {
+        addToast({
+          message: "Failed to save location.",
+          type: "error",
+        });
+      }
+    };
+
+    // Handle selecting a session
+    const handleSessionSelect = async (session) => {
+      if (selectedSession && selectedSession.sessionId === session.sessionId)
+        return; // Already selected
+
+      setMessages([]);
+      setSelectedSession(session);
+      setLoading(true);
+
+      const messages = await sessionApi.loadSessionMessages(session.sessionId);
+      setMessages(messages);
+      setLoading(false);
+    };
+
+    // Handle deleting a session
+    const handleDeleteSession = async (sessionId) => {
+      if (!window.confirm("Are you sure you want to delete this session?"))
+        return;
+
+      const success = await sessionApi.deleteSession(sessionId);
+
+      if (success) {
+        setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+        if (selectedSession && selectedSession.sessionId === sessionId) {
+          setSelectedSession(null);
+          setMessages([]);
+        }
+        addToast({
+          message: "Session deleted successfully.",
+          type: "success",
+        });
+      } else {
+        addToast({
+          message: "Failed to delete session.",
+          type: "error",
+        });
+      }
+    };
+
+    // Create a new session
+    const handleNewSession = () => {
+      setSelectedSession(null);
+      setMessages([]);
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-green-100 flex flex-col pt-14">
+        <Navbar
+          user={user}
+          tab={null}
+          setTab={() => {}}
+          onWeatherAIClick={() => setSidebarOpen(!sidebarOpen)}
         />
-        {/* Main Chat */}
-        <div className="flex-1 flex flex-col">
-          <div className="bg-white rounded-xl shadow-lg p-8 flex-1 flex flex-col border border-blue-100">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="bg-blue-50 p-4 rounded-lg text-gray-700 flex-1 shadow-sm">
-                <div className="flex items-center gap-2 font-bold text-lg">
-                  <CloudSun className="h-7 w-7 text-blue-600" /> Weather AI
-                  Assistant
-                </div>
-                {selectedSession == null ? (
-                  <ul className="list-disc ml-6 mt-2 text-sm text-gray-600">
-                    <li>"Will it rain today in New York?"</li>
-                    <li>"How hot will it be tomorrow in Tokyo?"</li>
-                    <li>"Was it sunny yesterday in London?"</li>
-                  </ul>
-                ) : null}
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto mb-4 rounded-lg bg-gray-50/50">
-              {messages.length === 0 && (
-                <div className="text-gray-400 text-center py-8">
-                  No messages yet. Start the conversation!
-                </div>
-              )}
-              {messages.map((msg, i) => (
-                <WeatherMessage
-                  key={i}
-                  role={msg.role}
-                  content={msg.content}
-                  location={
-                    msg.location ||
-                    JSON.parse(window.localStorage.getItem("user")).location
-                  }
-                  timestamp={msg.timestamp}
-                />
-              ))}
-              {loading && (
-                <div className="text-center text-blue-500 py-2">
-                  <div className="inline-block animate-pulse">Loading...</div>
-                </div>
-              )}
-            </div>
-            <form
-              className="flex items-center gap-2 mt-2"
-              onSubmit={handleSend}
-            >
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask about the weather..."
-                className="flex-1 shadow-sm"
-                disabled={loading}
+        <div className="flex w-full max-w-5xl mx-auto gap-6 flex-1 p-4">
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            queries={sessions}
+            onSessionSelect={handleSessionSelect}
+            onDeleteSession={handleDeleteSession}
+            onNewSession={handleNewSession}
+          />
+
+          {/* Main Chat */}
+          <div className="flex-1 flex flex-col">
+            <div className="bg-white rounded-xl shadow-lg p-8 flex-1 flex flex-col border border-blue-100">
+              {/* Chat Message Container */}
+              <ChatContainer
+                messages={messages}
+                loading={loading}
+                selectedSession={selectedSession}
+                user={user}
               />
-              <Button
-                type="button"
-                variant="primary"
-                onClick={toggleListening}
-                className={`${
-                  listening
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-blue-500 hover:bg-blue-600"
-                } text-white shadow-sm`}
-              >
-                <Mic
-                  className={`h-5 w-5 ${listening ? "animate-pulse" : ""}`}
-                />
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={loading}
-                className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            </form>
-            <div className="mt-4 flex items-center justify-between bg-gray-50/50 p-3 rounded-lg">
-              <span className="text-sm text-gray-600">
-                Default Location: {location || "Not set"}
-              </span>
-              <div className="flex gap-2">
-                <Input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-48 text-sm shadow-sm"
-                  placeholder="Enter location..."
-                />
-                <Button
-                  size="sm"
-                  onClick={handleSaveLocation}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Save className="h-4 w-4 mr-1" /> Save
-                </Button>
-              </div>
+
+              {/* Chat Input Form */}
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onAudioRecorded={handleAudioRecorded}
+                loading={loading}
+                addToast={addToast}
+              />
+
+              {/* Location Settings */}
+              <LocationSetting
+                location={location}
+                setLocation={setLocation}
+                handleSaveLocation={handleSaveLocation}
+              />
             </div>
           </div>
         </div>
+
+        <footer
+          id="scroll-target"
+          className="mt-8 text-center text-gray-500 text-sm py-3 bg-white/50"
+        >
+          Powered by OpenWeatherMap, Google Gemini, and ElevenLabs
+        </footer>
+
+        {/* Audio Player Component (hidden) */}
+        <AudioPlayer
+          base64Audio={audioBase64}
+          autoPlay={true}
+          addToast={addToast}
+        />
+
+        {/* Toast container for notifications */}
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
-      <footer
-        id="scroll-target"
-        className="mt-8 text-center text-gray-500 text-sm py-3 bg-white/50"
-      >
-        Powered by OpenWeatherMap, Google Gemini, and ElevenLabs
-      </footer>
-    </div>
-  );
+    );
+  };
+
+  return <SessionManager>{renderWithSessionAPI}</SessionManager>;
 }
