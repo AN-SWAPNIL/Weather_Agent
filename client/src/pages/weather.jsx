@@ -161,95 +161,20 @@ export default function WeatherChatPage() {
 
       try {
         // Show loading message for audio
-        // addToast({
-        //   message: "Processing your voice query...",
-        //   type: "info",
-        // });
+        addToast({
+          message: "Processing your voice query...",
+          type: "info",
+        });
 
         const sessionId = selectedSession
           ? selectedSession.sessionId
           : undefined;
         const data = await sessionApi.sendAudioQuery(audioBlob, sessionId);
 
-        // Play the audio response if available
-        if (data.audio_reply) {
-          try {
-            // console.log(
-            //   "Audio reply received, length:",
-            //   data.audio_reply.length
-            // );
-
-            // Ensure the audio is in the correct format with proper MIME type
-            const audioData = data.audio_reply.startsWith("data:")
-              ? data.audio_reply.split(",")[1]
-              : data.audio_reply;
-
-            // Log the first few characters to debug the format
-            // console.log("Audio data sample:", audioData.substring(0, 50));
-            // console.log(
-            //   "Audio format from server:",
-            //   data.audio_url ? data.audio_url.split(".").pop() : "unknown"
-            // );
-
-            // If we got valid data, set the state which will trigger our optimized AudioPlayer
-            if (audioData && audioData.length > 0) {
-              console.log("Setting audio data for playback");
-              setAudioBase64(audioData);
-
-              // addToast({
-              //   message: "Audio response ready",
-              //   type: "success",
-              // });
-                // Clear previous toasts before showing new one
-                // Clear all existing toasts
-                toasts.forEach((t) => removeToast(t.id));
-                addToast({
-                  message: "Audio response ready",
-                  type: "success",
-                });
-                // Don't show audio response toast
-            } else if (data.audio_url) {
-              // If no base64 but we have a URL, try to use that
-              console.log("Using audio URL instead of base64:", data.audio_url);
-              const audio = new Audio(`http://localhost:4000${data.audio_url}`);
-              audio
-                .play()
-                // .then(() => {
-                //   addToast({
-                //     message: "Playing audio from URL",
-                //     type: "success",
-                //   });
-                // })
-                .catch((err) => {
-                  console.error("Error playing from URL:", err);
-                  // addToast({
-                  //   message: "Failed to play audio from URL",
-                  //   type: "error",
-                  // });
-                });
-            } else {
-              throw new Error("No valid audio data received");
-            }
-          } catch (audioError) {
-            console.error("Error processing audio data:", audioError);
-            toasts.forEach((t) => removeToast(t.id));
-            addToast({
-              message:
-                "Failed to process audio",
-              type: "warning",
-            });
-          }
-        } else {
-          console.log("No audio reply received from server");
-          toasts.forEach((t) => removeToast(t.id));
-          addToast({
-            message: "No audio response available",
-            type: "warning",
-          });
-        }
-
-        // // Remove the loading message
-        // setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
+        // console.log("Audio query response:", data.audio_reply);
+        
+        // Remove the loading message
+        setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
 
         // Add the transcribed query from the user
         setMessages((msgs) => [
@@ -288,6 +213,7 @@ export default function WeatherChatPage() {
         //   const updatedSessions = await sessionApi.loadSessions();
         //   setSessions(updatedSessions);
         // }
+        return data;
       } catch (error) {
         console.error("Error processing audio query:", error);
 

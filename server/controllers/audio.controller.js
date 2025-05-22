@@ -73,15 +73,16 @@ export const synthesizeSpeech = async (req, res) => {
     );
 
     // Ensure the directory exists
-    await fs.ensureDir(path.dirname(outputPath));
-
-    // Save audio to file
+    await fs.ensureDir(path.dirname(outputPath)); // Save audio to file
     const result = await textToSpeech(text, outputPath);
 
-    // After file is saved, send it to the client
+    // After file is saved, send it to the client with optimized settings
     const stat = fs.statSync(outputPath);
+
+    // Set appropriate MIME type and headers for better browser compatibility
     res.setHeader("Content-Length", stat.size);
     res.setHeader("Content-Type", "audio/wav");
+    res.setHeader("Cache-Control", "no-cache, no-store");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename=${outputFilename}`
@@ -202,10 +203,12 @@ export const queryAudioFile = async (req, res) => {
       }
 
       // Step 4: Read the generated audio file and convert to base64
+      // Read the generated audio file and convert to base64
       const audioData = fs.readFileSync(audioFilePath);
       console.log(
         `Audio file read successfully: ${audioFilePath}, size: ${audioData.length} bytes`
       );
+
       const base64Audio = audioData.toString("base64");
 
       if (base64Audio.length === 0) {
@@ -216,9 +219,13 @@ export const queryAudioFile = async (req, res) => {
       );
 
       // Include full data URI for better browser compatibility
+      // Use explicit content type to ensure browsers handle it correctly
       weatherResponse.audio_reply = `data:audio/wav;base64,${base64Audio}`;
-      weatherResponse.audio_url = `/api/audio/${outputFilename}`; // URL for direct access
-      weatherResponse.audio_format = "wav"; // Explicitly specify WAV format
+
+      // Also provide the direct URL for clients that prefer to stream rather than decode base64
+      weatherResponse.audio_url = `/api/audio/${outputFilename}`;
+      weatherResponse.audio_format = "wav";
+      weatherResponse.audio_size = audioData.length; // Adding file size for client-side validation
     } catch (error) {
       console.error("Error processing audio:", error);
       // Use a fallback file if the current one fails
@@ -251,3 +258,39 @@ export const queryAudioFile = async (req, res) => {
     });
   }
 };
+
+// export const queryAudioFile = async (req, res) => {
+//   try {
+//     const sessionId = req.body.sessionId;
+
+//     let weatherResponse = {
+//       sessionId: sessionId || null,
+//       sessionName: "Voice Query",
+//       update_time: new Date().toISOString(),
+//       location: req.user.location || "Unknown",
+//       message:
+//         "I'm sorry, I couldn't process your request at this moment. Please try again later.",
+//     };
+//     const fallbackPath = path.join(__dirname, "../data/record.wav");
+//     const audioData = fs.readFileSync(fallbackPath);
+//     weatherResponse.audio_reply = `data:audio/wav;base64,${audioData.toString("base64")}`;
+//     weatherResponse.audio_url = `/api/audio/data/record.wav`; // URL for direct access
+//     weatherResponse.audio_format = "wav"; // Explicitly specify WAV format
+//     const query = "What is the weather today?";
+
+//     const response = {
+//       ...weatherResponse,
+//       query: query,
+//     };
+
+//     // Return the combined response
+//     return res.status(StatusCodes.OK).json(response);
+//   } catch (error) {
+//     console.log("Error in file upload audio query:", error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       success: false,
+//       message: "Failed to process audio file query",
+//       error: error.message,
+//     });
+//   }
+// };

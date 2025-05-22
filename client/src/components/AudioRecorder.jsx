@@ -14,15 +14,22 @@ export default function AudioRecorder({
   addToast,
   removeToast,
 }) {
-  const [listening, setListening] = useState(false);
+  const AudioRecorderState = {
+    IDLE: "IDLE",
+    RECORDING: "RECORDING",
+    PROCESSING: "PROCESSING",
+    PLAYING: "PLAYING",
+  };
+  const [state, setState] = useState(AudioRecorderState.IDLE);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [transcribedText, setTranscribedText] = useState("");
+  const [response, setResponse] = useState("");
+  const [query, setQuery] = useState("");
   const [audioResponse, setAudioResponse] = useState(null);
-  const [waitingForResponse, setWaitingForResponse] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
+  const audioRef = useRef(null);
 
   // Start recording audio when mic button is clicked
   const startRecording = async () => {
@@ -58,7 +65,8 @@ export default function AudioRecorder({
           const arrayBuffer = await audioBlob.arrayBuffer();
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-          setWaitingForResponse(true);
+          // Change state to PROCESSING
+          setState(AudioRecorderState.PROCESSING);
 
           // Create WAV file
           const wavBlob = await convertToWav(audioBuffer);
@@ -68,7 +76,8 @@ export default function AudioRecorder({
 
           // Update transcribed text and audio response
           if (response) {
-            setTranscribedText(response.query || "");
+            setResponse(response.message || "");
+            setQuery(response.query || "");
             if (response.audio_reply) {
               // Debug log the audio data
               console.log("Received audio response", {
@@ -79,24 +88,40 @@ export default function AudioRecorder({
                 sample: response.audio_reply?.substring(0, 50) + "...",
               });
 
-              // Clear any previous audio response first
+              // Clear any previous audio reference and response
+              if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.removeAttribute("src");
+                audioRef.current.load();
+                audioRef.current = null;
+              }
               setAudioResponse(null);
+
+              // Verify we have valid audio data before proceeding
+              if (!response.audio_reply || response.audio_reply.trim() === "") {
+                console.warn("Received empty audio data");
+                setState(AudioRecorderState.IDLE);
+                return;
+              }
 
               // Small delay to ensure state update before setting new audio
               setTimeout(() => {
                 // Pass audio data directly - our improved VoiceInteractionModal can handle both data URI and raw base64
                 setAudioResponse(response.audio_reply);
-                setWaitingForResponse(false);
-                setIsPlaying(true);
+                // Change state to PLAYING
+                setState(AudioRecorderState.PLAYING);
 
                 console.log("Setting audio response directly", {
                   length: response.audio_reply?.length,
                   sample: response.audio_reply?.substring(0, 50) + "...",
                 });
-              }, 100);
+              }, 200);
             } else {
               console.warn("Response had no audio_reply property", response);
+              setState(AudioRecorderState.IDLE);
             }
+          } else {
+            setState(AudioRecorderState.IDLE);
           }
 
           // Release microphone access
@@ -113,21 +138,13 @@ export default function AudioRecorder({
               duration: 5000,
             });
           }
+          setState(AudioRecorderState.IDLE);
         }
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
-      setListening(true);
-
-      // // Show toast notification
-      // if (addToast) {
-      //   addToast({
-      //     message: "Recording... Speak now!",
-      //     type: "info",
-      //     duration: 10000,
-      //   });
-      // }
+      setState(AudioRecorderState.RECORDING);
 
       // Automatically stop recording after 10 seconds
       setTimeout(() => {
@@ -146,7 +163,7 @@ export default function AudioRecorder({
           duration: 5000,
         });
       }
-      setListening(false);
+      setState(AudioRecorderState.IDLE);
     }
   };
 
@@ -157,39 +174,77 @@ export default function AudioRecorder({
       mediaRecorderRef.current.state === "recording"
     ) {
       mediaRecorderRef.current.stop();
-      // if (addToast) {
-      //   addToast({
-      //     message: "Processing your query...",
-      //     type: "info",
-      //   });
-      // }
     }
-    setListening(false);
-  };
-
-  // Toggle recording state
-  const toggleListening = () => {
-    if (listening) {
+    // Don't set state here as the onstop handler will handle state changes
+  }; // Toggle recording state
+  const toggleRecording = () => {
+    if (state === AudioRecorderState.RECORDING) {
       stopRecording();
-    } else {
+    } else if (
+      state === AudioRecorderState.IDLE ||
+      state === AudioRecorderState.PLAYING
+    ) {
+      // If we're playing, stop that first before starting recording
+      if (state === AudioRecorderState.PLAYING) {
+        // Reset audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+      }
       startRecording();
+    }
+  }; // Playback control
+  
+  const togglePlayback = () => {
+    if (state === AudioRecorderState.PLAYING) {
+      // When stopping playback, go to IDLE state
+      setState(AudioRecorderState.IDLE);
+
+      // Pause but don't reset src here as we might want to play it again
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    } else if (state === AudioRecorderState.IDLE && audioResponse) {
+      // Make sure we have valid audio response before trying to play
+      if (!audioResponse || audioResponse.trim() === "") {
+        console.warn("Attempted to play empty audio response");
+        return;
+      }
+
+      setState(AudioRecorderState.PLAYING);
     }
   };
 
   // Handle opening the voice interaction modal
   const handleOpenModal = () => {
     setIsModalOpen(true);
+  }; // Handle closing the voice interaction modal
+  const handleCloseModal = () => {
+    if (state !== AudioRecorderState.RECORDING) {
+      // Clean up audio resources
+      if (audioRef.current) {
+        // Full cleanup of audio element
+        audioRef.current.pause();
+        audioRef.current.removeAttribute("src");
+        audioRef.current.load(); // Important to apply the src change
+        audioRef.current = null;
+      }
+
+      setIsModalOpen(false);
+      setResponse("");
+      setQuery(""); // Clear the query as well
+      setAudioResponse(null);
+      setState(AudioRecorderState.IDLE);
+
+      // Explicitly reset the error state in VoiceInteractionModal when closing
+      // This will be handled through props in the VoiceInteractionModal
+    }
   };
 
-  // Handle closing the voice interaction modal
-  const handleCloseModal = () => {
-    if (!listening) {
-      setIsModalOpen(false);
-      setTranscribedText("");
-      setAudioResponse(null);
-      setIsPlaying(false);
-      setWaitingForResponse(false);
-    }
+  // Handle audio playback completion
+  const handlePlaybackComplete = () => {
+    setState(AudioRecorderState.IDLE);
   };
 
   return (
@@ -203,19 +258,20 @@ export default function AudioRecorder({
         title="Start voice recording"
       >
         <Mic className="h-5 w-5" />
-      </Button>
-
+      </Button>{" "}
       <VoiceInteractionModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        isRecording={listening}
-        onToggleRecording={toggleListening}
-        transcribedText={transcribedText}
+        state={state}
+        setState={setState}
+        AudioRecorderState={AudioRecorderState}
+        onToggleRecording={toggleRecording}
+        onTogglePlayback={togglePlayback}
+        onPlaybackComplete={handlePlaybackComplete}
+        response={response}
+        query={query}
         audioBase64={audioResponse}
-        waitingForResponse={waitingForResponse}
-        isPlaying={isPlaying}
-        setIsPlaying={setIsPlaying}
-        setWaitingForResponse={setWaitingForResponse}
+        audioRef={audioRef}
       />
     </>
   );

@@ -9,7 +9,7 @@ import { MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 
 config();
 const llmModel = new ChatGoogleGenerativeAI({
-  model: "gemini-2.0-flash",
+  model: "gemini-1.5-flash",
   apiKey: process.env.GEMINI_API_KEY,
   temperature: 0.7,
 });
@@ -174,7 +174,7 @@ const llmCall = async (state) => {
     {
       role: "system",
       content: `
-        You are Weather AI, a friendly assistant for weather-related questions using tools. Only response the query's answer, not the User's information.
+        You are Weather AI, a friendly assistant for weather-related questions using tools.
 
         **Guidelines:**
         - Be clear, concise, and human-friendly.

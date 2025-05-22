@@ -78,16 +78,15 @@ export const textToSpeech = async (text, outputPath) => {
         process.env.AZURE_SPEECH_REGION
       );
 
-      // Set output format to WAV
-      // Note: In newer versions of the SDK, the method is speechConfig.speechSynthesisOutputFormat
+      // Set output format to MP3 for browser compatibility
       speechConfig.speechSynthesisOutputFormat =
-        sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
+        sdk.SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3; // MP3 format
 
       // Create audio configuration for output
       const audioConfig = sdk.AudioConfig.fromAudioFileOutput(outputPath);
 
-      // Set the voice name (can be customized)
-      speechConfig.speechSynthesisVoiceName = "en-US-JennyNeural";
+      // Set the voice name - using newer neural voice for better quality
+      speechConfig.speechSynthesisVoiceName = "en-US-AvaMultilingualNeural";
 
       // Create the speech synthesizer
       const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
@@ -103,6 +102,8 @@ export const textToSpeech = async (text, outputPath) => {
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
             // Synthesis completed successfully
             console.log("Speech synthesis completed successfully");
+
+            // Close and clear the synthesizer
             synthesizer.close();
 
             // Verify the file exists and has content
