@@ -21,7 +21,10 @@ export const transcribe = async (file) => {
       speechConfig.speechRecognitionLanguage = "en-US";
 
       // Create audio configuration using the file path
-      const audioConfig = sdk.AudioConfig.fromWavFileInput(fs.readFileSync(file.path));
+      // Azure's SDK can handle various input formats including WAV and MP3
+      const audioConfig = sdk.AudioConfig.fromWavFileInput(
+        fs.readFileSync(file.path)
+      );
 
       // Create speech recognizer
       const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
@@ -75,14 +78,23 @@ export const textToSpeech = async (text, outputPath) => {
         process.env.AZURE_SPEECH_REGION
       );
 
+      // Set output format to WAV
+      // Note: In newer versions of the SDK, the method is speechConfig.speechSynthesisOutputFormat
+      speechConfig.speechSynthesisOutputFormat =
+        sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
+
       // Create audio configuration for output
       const audioConfig = sdk.AudioConfig.fromAudioFileOutput(outputPath);
 
       // Set the voice name (can be customized)
-      speechConfig.speechSynthesisVoiceName = "en-US-AvaMultilingualNeural";
+      speechConfig.speechSynthesisVoiceName = "en-US-JennyNeural";
 
       // Create the speech synthesizer
       const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
+
+      console.log(
+        `Starting speech synthesis for text (length: ${text.length})`
+      );
 
       // Start the synthesis
       synthesizer.speakTextAsync(
@@ -90,14 +102,32 @@ export const textToSpeech = async (text, outputPath) => {
         (result) => {
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
             // Synthesis completed successfully
+            console.log("Speech synthesis completed successfully");
             synthesizer.close();
-            resolve({ success: true, filePath: outputPath });
+
+            // Verify the file exists and has content
+            if (fs.existsSync(outputPath)) {
+              const stats = fs.statSync(outputPath);
+              console.log(`Generated audio file size: ${stats.size} bytes`);
+
+              if (stats.size > 0) {
+                resolve({ success: true, filePath: outputPath });
+              } else {
+                reject(new Error("Audio file was generated but is empty"));
+              }
+            } else {
+              reject(new Error("Audio file was not created"));
+            }
           } else {
+            console.log(
+              `Speech synthesis failed with reason: ${result.reason}`
+            );
             synthesizer.close();
             reject(new Error(`Speech synthesis failed: ${result.reason}`));
           }
         },
         (error) => {
+          console.error("Error during speech synthesis:", error);
           synthesizer.close();
           reject(new Error(`Error in speech synthesis: ${error}`));
         }

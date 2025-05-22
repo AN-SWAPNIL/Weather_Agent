@@ -7,7 +7,6 @@ import { ToastContainer, useToast } from "../components/ui/toast";
 // Newly created components
 import ChatContainer from "../components/ChatContainer";
 import ChatInput from "../components/ChatInput";
-import AudioPlayer from "../components/AudioPlayer";
 import LocationSetting from "../components/LocationSetting";
 import SessionManager from "../components/SessionManager";
 
@@ -35,6 +34,20 @@ export default function WeatherChatPage() {
     }
   }, []);
 
+  // This effect manages the audio state - cleans it up after a set time
+  useEffect(() => {
+    // Only create a cleanup timeout if we have audio data
+    if (audioBase64) {
+      // Auto-clear the audio state after 30 seconds to prevent memory issues
+      const timeout = setTimeout(() => {
+        setAudioBase64(null);
+      }, 30000); // 30 seconds is enough time for playback
+
+      // Clean up the timeout if component unmounts or audio changes
+      return () => clearTimeout(timeout);
+    }
+  }, [audioBase64]);
+
   // Render function that uses the SessionManager
   const renderWithSessionAPI = (sessionApi) => {
     // Load sessions on component mount
@@ -44,13 +57,13 @@ export default function WeatherChatPage() {
         setSessions(sessions);
 
         // Auto-select the most recent session
-        if (sessions.length > 0 && !selectedSession) {
-          setSelectedSession(sessions[0]);
-          const messages = await sessionApi.loadSessionMessages(
-            sessions[0].sessionId
-          );
-          setMessages(messages);
-        }
+        // if (sessions.length > 0 && !selectedSession) {
+        //   setSelectedSession(sessions[0]);
+        //   const messages = await sessionApi.loadSessionMessages(
+        //     sessions[0].sessionId
+        //   );
+        //   setMessages(messages);
+        // }
       };
 
       loadInitialData();
@@ -81,6 +94,7 @@ export default function WeatherChatPage() {
         {
           role: "user",
           content: query,
+          location: JSON.parse(window.localStorage.getItem("user")).location,
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -112,47 +126,130 @@ export default function WeatherChatPage() {
         };
         setSessions((prev) => [newSession, ...prev]);
         setSelectedSession(newSession);
-
-        // Load messages for new session
-        const messages = await sessionApi.loadSessionMessages(
-          response.sessionId
-        );
-        setMessages(messages);
-      } else {
-        // Reload messages for current session
-        const messages = await sessionApi.loadSessionMessages(sessionId);
-        setMessages(messages);
       }
-
+      setMessages((msgs) => [
+        ...msgs,
+        {
+          role: "assistant",
+          content: response.message,
+          location: response.location,
+          timestamp: response.timestamp,
+        },
+      ]);
       setLoading(false);
       // Refresh sessions list
-      const updatedSessions = await sessionApi.loadSessions();
-      setSessions(updatedSessions);
+      // if (!sessionId) {
+      //   const updatedSessions = await sessionApi.loadSessions();
+      //   setSessions(updatedSessions);
+      // }
     };
 
     // Handle audio recording submission
     const handleAudioRecorded = async (audioBlob) => {
       setLoading(true);
 
-      // Add a loading message to show typing indicator
-      setMessages((msgs) => [
-        ...msgs,
-        {
-          role: "user",
-          content: "Recording audio...",
-          timestamp: new Date().toISOString(),
-          isAudioLoading: true,
-        },
-      ]);
+      // // Add a loading message to show typing indicator
+      // setMessages((msgs) => [
+      //   ...msgs,
+      //   {
+      //     role: "user",
+      //     content: "Recording audio...",
+      //     timestamp: new Date().toISOString(),
+      //     isAudioLoading: true,
+      //   },
+      // ]);
 
       try {
+        // Show loading message for audio
+        // addToast({
+        //   message: "Processing your voice query...",
+        //   type: "info",
+        // });
+
         const sessionId = selectedSession
           ? selectedSession.sessionId
           : undefined;
         const data = await sessionApi.sendAudioQuery(audioBlob, sessionId);
 
-        // Remove the loading message
-        setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
+        // Play the audio response if available
+        if (data.audio_reply) {
+          try {
+            // console.log(
+            //   "Audio reply received, length:",
+            //   data.audio_reply.length
+            // );
+
+            // Ensure the audio is in the correct format with proper MIME type
+            const audioData = data.audio_reply.startsWith("data:")
+              ? data.audio_reply.split(",")[1]
+              : data.audio_reply;
+
+            // Log the first few characters to debug the format
+            // console.log("Audio data sample:", audioData.substring(0, 50));
+            // console.log(
+            //   "Audio format from server:",
+            //   data.audio_url ? data.audio_url.split(".").pop() : "unknown"
+            // );
+
+            // If we got valid data, set the state which will trigger our optimized AudioPlayer
+            if (audioData && audioData.length > 0) {
+              console.log("Setting audio data for playback");
+              setAudioBase64(audioData);
+
+              // addToast({
+              //   message: "Audio response ready",
+              //   type: "success",
+              // });
+                // Clear previous toasts before showing new one
+                // Clear all existing toasts
+                toasts.forEach((t) => removeToast(t.id));
+                addToast({
+                  message: "Audio response ready",
+                  type: "success",
+                });
+                // Don't show audio response toast
+            } else if (data.audio_url) {
+              // If no base64 but we have a URL, try to use that
+              console.log("Using audio URL instead of base64:", data.audio_url);
+              const audio = new Audio(`http://localhost:4000${data.audio_url}`);
+              audio
+                .play()
+                // .then(() => {
+                //   addToast({
+                //     message: "Playing audio from URL",
+                //     type: "success",
+                //   });
+                // })
+                .catch((err) => {
+                  console.error("Error playing from URL:", err);
+                  // addToast({
+                  //   message: "Failed to play audio from URL",
+                  //   type: "error",
+                  // });
+                });
+            } else {
+              throw new Error("No valid audio data received");
+            }
+          } catch (audioError) {
+            console.error("Error processing audio data:", audioError);
+            toasts.forEach((t) => removeToast(t.id));
+            addToast({
+              message:
+                "Failed to process audio",
+              type: "warning",
+            });
+          }
+        } else {
+          console.log("No audio reply received from server");
+          toasts.forEach((t) => removeToast(t.id));
+          addToast({
+            message: "No audio response available",
+            type: "warning",
+          });
+        }
+
+        // // Remove the loading message
+        // setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
 
         // Add the transcribed query from the user
         setMessages((msgs) => [
@@ -160,7 +257,7 @@ export default function WeatherChatPage() {
           {
             role: "user",
             content: data.query,
-            timestamp: new Date().toISOString(),
+            timestamp: data.timestamp,
             location: data.location,
           },
         ]);
@@ -171,18 +268,13 @@ export default function WeatherChatPage() {
           {
             role: "assistant",
             content: data.message,
-            timestamp: new Date().toISOString(),
+            timestamp: data.timestamp,
             location: data.location,
           },
         ]);
 
-        // Play the audio response if available
-        if (data.audio_reply) {
-          setAudioBase64(data.audio_reply);
-        }
-
         // If this is a new session, update the sessions list
-        if (!selectedSession && data.sessionId) {
+        if (!sessionId && data.sessionId) {
           const newSession = {
             sessionId: data.sessionId,
             sessionName: data.sessionName,
@@ -190,11 +282,12 @@ export default function WeatherChatPage() {
           };
           setSessions((prev) => [newSession, ...prev]);
           setSelectedSession(newSession);
-        } else {
-          // Refresh the sessions list
-          const updatedSessions = await sessionApi.loadSessions();
-          setSessions(updatedSessions);
         }
+        //  else {
+        //   // Refresh the sessions list
+        //   const updatedSessions = await sessionApi.loadSessions();
+        //   setSessions(updatedSessions);
+        // }
       } catch (error) {
         console.error("Error processing audio query:", error);
 
@@ -317,7 +410,9 @@ export default function WeatherChatPage() {
                 onSendMessage={handleSendMessage}
                 onAudioRecorded={handleAudioRecorded}
                 loading={loading}
+                toasts={toasts}
                 addToast={addToast}
+                removeToast={removeToast}
               />
 
               {/* Location Settings */}
@@ -334,15 +429,9 @@ export default function WeatherChatPage() {
           id="scroll-target"
           className="mt-8 text-center text-gray-500 text-sm py-3 bg-white/50"
         >
-          Powered by OpenWeatherMap, Google Gemini, and ElevenLabs
+          Powered by OpenWeatherMap, Google Gemini, and Azure AI
         </footer>
 
-        {/* Audio Player Component (hidden) */}
-        <AudioPlayer
-          base64Audio={audioBase64}
-          autoPlay={true}
-          addToast={addToast}
-        />
 
         {/* Toast container for notifications */}
         <ToastContainer toasts={toasts} removeToast={removeToast} />

@@ -11,8 +11,9 @@ export default function ChatInput({
   onSendMessage,
   onAudioRecorded,
   loading = false,
-  listening = false,
+  toasts,
   addToast,
+  removeToast,
 }) {
   const [query, setQuery] = useState("");
 
@@ -31,19 +32,21 @@ export default function ChatInput({
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Ask about the weather..."
         className="flex-1 shadow-sm"
-        disabled={loading || listening}
+        disabled={loading}
       />
 
       <AudioRecorder
         onAudioRecorded={onAudioRecorded}
         disabled={loading}
+        toasts={toasts}
         addToast={addToast}
+        removeToast={removeToast}
       />
 
       <Button
         type="submit"
         variant="primary"
-        disabled={loading || listening || !query.trim()}
+        disabled={loading || !query.trim()}
         className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
       >
         <Send className="h-5 w-5" />

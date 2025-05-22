@@ -19,7 +19,8 @@ export const queryExecutor = async (user, sessionId, inputMessage) => {
     const session = await getSessionMessages(user._id, sessionId);
     console.log(session);
 
-    const previousMessages = session.messages;
+    // Check if session exists and has messages
+    const previousMessages = session?.messages || [];
 
     // Format the messages to pass into the model
     const formattedMessages = previousMessages.map((msg) => ({
@@ -34,13 +35,16 @@ export const queryExecutor = async (user, sessionId, inputMessage) => {
     let result = await runAgent(user, inputMessage, formattedMessages);
 
     if (!result) {
-      result: "Sorry, Weather AI is unavailable at the moment. Please try again later."
+      result =
+        "Sorry, Weather AI is unavailable at the moment. Please try again later.";
     }
 
     // Save the assistant's response to the session
-    await addMessageToSession(user._id, sessionId,
-        { role: "user", content: inputMessage, location: user.location },
-        { role: "assistant", content: result, location: user.location },
+    await addMessageToSession(
+      user._id,
+      sessionId,
+      { role: "user", content: inputMessage, location: user.location },
+      { role: "assistant", content: result, location: user.location }
     );
 
     return {
@@ -48,6 +52,7 @@ export const queryExecutor = async (user, sessionId, inputMessage) => {
       sessionName: session.name,
       update_time: session.update_time,
       location: user.location,
+      query: inputMessage,
       message: result,
     };
   } catch (error) {

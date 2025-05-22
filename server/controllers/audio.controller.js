@@ -1,5 +1,6 @@
 // filepath: /mnt/AN_Swapnil_D/Codes/SocioFi/Weather_Agent/server/controllers/audio.controller.js
 import { transcribe, textToSpeech } from "../services/audio.service.js";
+import { queryExecutor } from "../controllers/weather.controller.js";
 import { StatusCodes } from "http-status-codes";
 import fs from "fs-extra";
 import path from "path";
@@ -80,7 +81,7 @@ export const synthesizeSpeech = async (req, res) => {
     // After file is saved, send it to the client
     const stat = fs.statSync(outputPath);
     res.setHeader("Content-Length", stat.size);
-    res.setHeader("Content-Type", "audio/mp3");
+    res.setHeader("Content-Type", "audio/wav");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename=${outputFilename}`
@@ -136,7 +137,6 @@ export const queryAudioFile = async (req, res) => {
       });
     }
 
-    // Step 1: Transcribe the audio using Azure Speech-to-Text
     const transcriptionResult = await transcribe(req.file);
 
     if (!transcriptionResult.success) {
@@ -147,6 +147,7 @@ export const queryAudioFile = async (req, res) => {
     }
 
     const query = transcriptionResult.transcript;
+    // const query = "What is the weather today?";
 
     console.log(
       `Processing weather query: "${query}" for user: ${req.user._id}`
@@ -157,35 +158,86 @@ export const queryAudioFile = async (req, res) => {
       if (err) console.error("Error deleting temporary file:", err);
     });
 
-    // Step 2: Process the text query using the weather service
-    const { queryExecutor } = await import(
-      "../controllers/weather.controller.js"
-    );
-    const weatherResponse = await queryExecutor(req.user, sessionId, query);
-    console.log("Query processed successfully:", weatherResponse);
+    let weatherResponse;
+    try {
+      weatherResponse = await queryExecutor(req.user, sessionId, query);
+      console.log("Query processed successfully:", weatherResponse);
+    } catch (error) {
+      console.error("Error processing weather query:", error);
+      // Provide a fallback response when the weather query fails
+      weatherResponse = {
+        sessionId: sessionId || null,
+        sessionName: "Voice Query",
+        update_time: new Date().toISOString(),
+        location: req.user.location || "Unknown",
+        message:
+          "I'm sorry, I couldn't process your request at this moment. Please try again later.",
+      };
+    }
 
-    // Step 3: Convert the weather response text to speech using Azure Text-to-Speech
-    const outputFilename = `tts-${Date.now()}.wav`;
-    const outputPath = path.join(
+    const timestamp = Date.now();
+    const outputFilename = `tts-${timestamp}.wav`;
+
+    // Save in the server's data directory
+    const audioFilePath = path.join(
       __dirname,
       "../data/downloads",
       outputFilename
     );
 
     // Ensure the directory exists
-    await fs.ensureDir(path.dirname(outputPath));
-    // Generate and save audio to file
-    await textToSpeech(weatherResponse.message, outputPath);
+    await fs.ensureDir(path.dirname(audioFilePath));
 
-    // Step 4: Read the generated audio file and send it with the response
-    const audioData = fs.readFileSync(outputPath);
-    const base64Audio = audioData.toString("base64");
+    try {
+      const result = await textToSpeech(weatherResponse.message, audioFilePath);
+
+      // Verify the file exists and has content
+      if (!fs.existsSync(audioFilePath)) {
+        throw new Error("Audio file was not created");
+      }
+
+      const stats = fs.statSync(audioFilePath);
+      if (stats.size === 0) {
+        throw new Error("Audio file is empty");
+      }
+
+      // Step 4: Read the generated audio file and convert to base64
+      const audioData = fs.readFileSync(audioFilePath);
+      console.log(
+        `Audio file read successfully: ${audioFilePath}, size: ${audioData.length} bytes`
+      );
+      const base64Audio = audioData.toString("base64");
+
+      if (base64Audio.length === 0) {
+        throw new Error("Base64 conversion resulted in empty string");
+      }
+      console.log(
+        `Base64 conversion successful, length: ${base64Audio.length}`
+      );
+
+      // Include full data URI for better browser compatibility
+      weatherResponse.audio_reply = `data:audio/wav;base64,${base64Audio}`;
+      weatherResponse.audio_url = `/api/audio/${outputFilename}`; // URL for direct access
+      weatherResponse.audio_format = "wav"; // Explicitly specify WAV format
+    } catch (error) {
+      console.error("Error processing audio:", error);
+      // Use a fallback file if the current one fails
+      const fallbackPath = path.join(__dirname, "../data/record.wav");
+
+      if (fs.existsSync(fallbackPath)) {
+        console.log("Using fallback audio file");
+        const audioData = fs.readFileSync(fallbackPath);
+        weatherResponse.audio_reply = `data:audio/wav;base64,${audioData.toString("base64")}`;
+      } else {
+        console.error("Both primary and fallback audio files failed");
+        weatherResponse.audio_reply = null;
+      }
+    }
 
     // Include both the text and audio responses, along with any additional parameters
     const response = {
       ...weatherResponse,
       query: query,
-      audio_reply: base64Audio,
     };
 
     // Return the combined response
@@ -198,4 +250,4 @@ export const queryAudioFile = async (req, res) => {
       error: error.message,
     });
   }
-}
+};

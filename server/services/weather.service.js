@@ -271,7 +271,11 @@ export const runAgent = async (user, input, history) => {
   console.log("Initial State:", initialState);
 
   const result = await agentBuilder.invoke(initialState);
-  return result.messages[result.messages.length - 1].content;
+  let message = result.messages[result.messages.length - 1].content;
+  if (message.startsWith(`User: ${user.name}, Home Location: ${user.location}, Current Time: ${time}\nQuery: `)) {
+    message = message.replace(`User: ${user.name}, Home Location: ${user.location}, Current Time: ${time}\nQuery: `, "");
+  }
+  return message;
 };
 
 // const input =

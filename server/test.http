@@ -258,11 +258,10 @@ Some additional data if needed
 ###
 Response:
 {
-  "sessionId": "3e957bba-302e-4e1f-a317-764954273c93",
-  "sessionName": "What is the weather like?",
-  "update_time": "2025-05-22T10:00:00.124Z",
-  "location": "Dhaka, Bangladesh",
-  "query": "What is the weather like?",
-  "message": "The weather response text goes here",
-  "audio_reply": "base64-encoded-audio-data"
+  "location": "Chittagong, Bangladesh",
+  "query": "Hello there, Hello. Hello there. Hello.",
+  "message": "Hello! How can I help you with the weather today?\n",
+  "audio_reply": "data:audio/wav;base64,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA/v////////8AAP////8AAAAAAAAAAP////8AAAAAAAAAAAAAAAAAAP//AAAAAAAAAAAAAAAAAAAAAAAAAAABAAIAAgACAAIABAADAAIABAADAAMAAwACAAEAAgABAAAAAAAAAAAAAAAAAAAAAAAAAAAA......AAEAAQAAAAEAAgABAAEAAQABAAIAAQABAAEAAQAAAAAAAAAAAAAAAAA=",
+  "audio_url": "/api/audio/tts-1747920845389.wav",
+  "audio_format": "wav"
 }
