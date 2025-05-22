@@ -6,6 +6,8 @@ import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { config } from "dotenv";
+config(); // Load environment variables from .env file
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -171,8 +173,7 @@ export const queryAudioFile = async (req, res) => {
         sessionName: "Voice Query",
         update_time: new Date().toISOString(),
         location: req.user.location || "Unknown",
-        message:
-          "I'm sorry, I couldn't process your request at this moment. Please try again later.",
+        message: "I'm sorry, I couldn't process your request at this moment. Please try again later.",
       };
     }
 
@@ -218,10 +219,13 @@ export const queryAudioFile = async (req, res) => {
         `Base64 conversion successful, length: ${base64Audio.length}`
       );
 
+      fs.unlink(audioFilePath, (err) => {
+        if (err) console.error("Error deleting audio file:", err);
+      });
+
       // Include full data URI for better browser compatibility
       // Use explicit content type to ensure browsers handle it correctly
       weatherResponse.audio_reply = `data:audio/wav;base64,${base64Audio}`;
-
       // Also provide the direct URL for clients that prefer to stream rather than decode base64
       weatherResponse.audio_url = `/api/audio/${outputFilename}`;
       weatherResponse.audio_format = "wav";
@@ -229,12 +233,15 @@ export const queryAudioFile = async (req, res) => {
     } catch (error) {
       console.error("Error processing audio:", error);
       // Use a fallback file if the current one fails
-      const fallbackPath = path.join(__dirname, "../data/record.wav");
+      const fallbackPath = path.join(__dirname, "../data/try_again.wav");
 
       if (fs.existsSync(fallbackPath)) {
         console.log("Using fallback audio file");
         const audioData = fs.readFileSync(fallbackPath);
         weatherResponse.audio_reply = `data:audio/wav;base64,${audioData.toString("base64")}`;
+        weatherResponse.message = process.env.TRY_AGAIN_MESSAGE || "Sorry, I didn't get that or there was an error. Please try again!!";
+        weatherResponse.audio_url = `/api/audio/try_again.wav`; // URL for direct access
+        weatherResponse.audio_format = "wav"; // Explicitly specify WAV format
       } else {
         console.error("Both primary and fallback audio files failed");
         weatherResponse.audio_reply = null;

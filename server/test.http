@@ -232,7 +232,7 @@ Content-Type: application/json
 authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWNlMTNmYmUwNDA0MWI3Mzk4NDEyOCIsImlhdCI6MTc0Nzg1OTkwMiwiZXhwIjoxNzUwNDUxOTAyfQ.n6F3OmjH8LU4PVbABFwCRBhDEvDJiC5MTbVLiAnyjuE
 
 {
-    "text": "Hello there! Today is a beautiful day."
+    "text": "Sorry, I didn't get that or there was an error. Please try again."
 }
 
 ### audio weather query (combines STT + weather API + TTS)
