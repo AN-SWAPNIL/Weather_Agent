@@ -42,6 +42,14 @@ export default function App() {
           }
         />
         <Route
+          path="/weather/:sessionId"
+          element={
+            <PrivateRoute>
+              <Weather />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/edit-password"
           element={
             <PrivateRoute>

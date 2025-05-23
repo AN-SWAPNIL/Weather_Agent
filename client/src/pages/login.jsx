@@ -71,9 +71,9 @@ export default function Login() {
           Don't have an account? Register
         </button>
       </div>
-      <footer className="mt-8 text-gray-500 text-sm text-center">
+      {/* <footer className="mt-8 text-gray-500 text-sm text-center">
         Powered by OpenWeatherMap, Google Gemini, and ElevenLabs
-      </footer>
+      </footer> */}
     </div>
   );
 }

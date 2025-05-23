@@ -1,5 +1,6 @@
 // filepath: /mnt/AN_Swapnil_D/Codes/SocioFi/Weather_Agent/client/src/pages/weather.jsx
 import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { ToastContainer, useToast } from "../components/ui/toast";
@@ -12,6 +13,9 @@ import SessionManager from "../services/session.service";
 
 // Main component
 export default function WeatherChatPage() {
+  const { sessionId: urlSessionId } = useParams();
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [location, setLocation] = useState("");
   const [sessions, setSessions] = useState([]);
@@ -56,18 +60,24 @@ export default function WeatherChatPage() {
         const sessions = await sessionApi.loadSessions();
         setSessions(sessions);
 
-        // Auto-select the most recent session
-        // if (sessions.length > 0 && !selectedSession) {
-        //   setSelectedSession(sessions[0]);
-        //   const messages = await sessionApi.loadSessionMessages(
-        //     sessions[0].sessionId
-        //   );
-        //   setMessages(messages);
-        // }
+        // Handle URL session ID
+        if (urlSessionId) {
+          const targetSession = sessions.find(
+            (s) => s.sessionId === urlSessionId
+          );
+          if (targetSession) {
+            setSelectedSession(targetSession);
+            const messages = await sessionApi.loadSessionMessages(urlSessionId);
+            setMessages(messages);
+          } else {
+            // Session not found, redirect to new session
+            navigate("/weather", { replace: true });
+          }
+        }
       };
 
       loadInitialData();
-    }, []);
+    }, [urlSessionId, navigate]);
 
     // Load messages when selected session changes
     useEffect(() => {
@@ -115,9 +125,7 @@ export default function WeatherChatPage() {
         ]);
         setLoading(false);
         return;
-      }
-
-      // If new session, add to sessions and select it
+      } // If new session, add to sessions and select it
       if (!sessionId && response.sessionId) {
         const newSession = {
           sessionId: response.sessionId,
@@ -126,6 +134,8 @@ export default function WeatherChatPage() {
         };
         setSessions((prev) => [newSession, ...prev]);
         setSelectedSession(newSession);
+        // Update URL to include the new session ID
+        navigate(`/weather/${response.sessionId}`, { replace: true });
       }
       setMessages((msgs) => [
         ...msgs,
@@ -196,9 +206,7 @@ export default function WeatherChatPage() {
             timestamp: data.timestamp,
             location: data.location,
           },
-        ]);
-
-        // If this is a new session, update the sessions list
+        ]); // If this is a new session, update the sessions list
         if (!sessionId && data.sessionId) {
           const newSession = {
             sessionId: data.sessionId,
@@ -207,6 +215,8 @@ export default function WeatherChatPage() {
           };
           setSessions((prev) => [newSession, ...prev]);
           setSelectedSession(newSession);
+          // Update URL to include the new session ID
+          navigate(`/weather/${data.sessionId}`, { replace: true });
         }
         //  else {
         //   // Refresh the sessions list
@@ -255,12 +265,13 @@ export default function WeatherChatPage() {
           type: "error",
         });
       }
-    };
-
-    // Handle selecting a session
+    }; // Handle selecting a session
     const handleSessionSelect = async (session) => {
       if (selectedSession && selectedSession.sessionId === session.sessionId)
         return; // Already selected
+
+      // Update URL to include session ID
+      navigate(`/weather/${session.sessionId}`, { replace: true });
 
       setMessages([]);
       setSelectedSession(session);
@@ -277,12 +288,14 @@ export default function WeatherChatPage() {
         return;
 
       const success = await sessionApi.deleteSession(sessionId);
-
+      
       if (success) {
         setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
         if (selectedSession && selectedSession.sessionId === sessionId) {
           setSelectedSession(null);
           setMessages([]);
+          // Navigate to new session if current session is deleted
+          navigate("/weather", { replace: true });
         }
         addToast({
           message: "Session deleted successfully.",
@@ -294,10 +307,10 @@ export default function WeatherChatPage() {
           type: "error",
         });
       }
-    };
-
-    // Create a new session
+    }; // Create a new session
     const handleNewSession = () => {
+      // Navigate to new session (no session ID)
+      navigate("/weather", { replace: true });
       setSelectedSession(null);
       setMessages([]);
     };
@@ -309,19 +322,23 @@ export default function WeatherChatPage() {
           tab={null}
           setTab={() => {}}
           onWeatherAIClick={() => setSidebarOpen(!sidebarOpen)}
-        />
+        />{" "}
         <div className="flex w-full max-w-5xl mx-auto gap-6 flex-1 p-4">
           <Sidebar
             open={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
             queries={sessions}
+            selectedSession={selectedSession}
             onSessionSelect={handleSessionSelect}
             onDeleteSession={handleDeleteSession}
             onNewSession={handleNewSession}
           />
 
           {/* Main Chat */}
-          <div className="flex-1 flex flex-col">
+          <div
+            className="flex-1 flex flex-col"
+            onClick={() => setSidebarOpen(false)}
+          >
             <div className="bg-white rounded-xl shadow-lg p-8 flex-1 flex flex-col border border-blue-100">
               {/* Chat Message Container */}
               <ChatContainer
@@ -350,14 +367,12 @@ export default function WeatherChatPage() {
             </div>
           </div>
         </div>
-
         <footer
           id="scroll-target"
-          className="mt-8 text-center text-gray-500 text-sm py-3 bg-white/50"
+          className="mt-5 text-center text-gray-500 text-sm py-3 bg-white/50"
         >
           Powered by OpenWeatherMap, Google Gemini, and Azure AI
         </footer>
-
         {/* Toast container for notifications */}
         <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>

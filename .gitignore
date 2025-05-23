@@ -11,8 +11,8 @@ coverage/
 server/test/*.log
 
 # Data
-server/data/uploads/
-server/data/downloads/
+server/data/uploads/*
+server/data/downloads/*
 
 # Logs
 logs

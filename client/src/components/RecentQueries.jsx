@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 
 export default function RecentQueries({
   queries,
+  selectedSession,
   onSessionSelect,
   onDeleteSession,
 }) {
@@ -24,11 +25,24 @@ export default function RecentQueries({
               key={item.sessionId || index}
               className="flex items-center gap-2 mb-2"
             >
+              {" "}
               <button
-                className="flex-1 text-left bg-blue-50 rounded p-3 text-sm border border-blue-100 hover:bg-blue-100 transition"
+                className={`flex-1 text-left rounded p-3 text-sm border transition ${
+                  selectedSession &&
+                  selectedSession.sessionId === item.sessionId
+                    ? "bg-blue-200 border-blue-400 hover:bg-blue-300"
+                    : "bg-blue-50 border-blue-100 hover:bg-blue-100"
+                }`}
                 onClick={() => onSessionSelect && onSessionSelect(item)}
               >
-                <div className="font-medium text-blue-800">
+                <div
+                  className={`font-medium ${
+                    selectedSession &&
+                    selectedSession.sessionId === item.sessionId
+                      ? "text-blue-900"
+                      : "text-blue-800"
+                  }`}
+                >
                   {item.sessionName.length > 20
                     ? `${item.sessionName.slice(0, 20)}...`
                     : item.sessionName}

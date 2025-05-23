@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 export default function Sidebar({
   open,
   queries,
+  selectedSession,
   onSessionSelect,
   onDeleteSession,
   onNewSession,
@@ -27,6 +28,7 @@ export default function Sidebar({
         <div className="flex-1 flex flex-col justify-center">
           <RecentQueries
             queries={queries}
+            selectedSession={selectedSession}
             onSessionSelect={onSessionSelect}
             onDeleteSession={onDeleteSession}
           />
