@@ -8,8 +8,8 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Weather from "./pages/weather";
-import EditPassword from "./pages/edit-password";
-import NotFound from "./pages/NotFound"; // Import the NotFound component
+import EditPassword from "./pages/editPassword";
+import NotFound from "./pages/notFound"; // Import the NotFound component
 
 function PrivateRoute({ children }) {
   const user = window.localStorage.getItem("user");

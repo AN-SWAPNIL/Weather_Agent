@@ -2,9 +2,11 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import AuthService from "../services/auth.service";
 import { CloudSun } from "lucide-react";
+import { useState } from "react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
   const {
     register,
     handleSubmit,
@@ -13,6 +15,7 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     try {
+      setErrorMessage("");
       const res = await AuthService.login(data);
       let user = JSON.stringify(res.user);
       window.localStorage.setItem("user", user);
@@ -20,7 +23,8 @@ export default function Login() {
       window.localStorage.setItem("token", token);
       window.location.href = "/weather"; // Redirect to weather page after login
     } catch (e) {
-      alert("Wrong Password?");
+      console.error("Login error:", e);
+      setErrorMessage(e.message || "Failed to log in. Please try again.");
     }
   };
 
@@ -62,6 +66,12 @@ export default function Login() {
           >
             Log In
           </button>
+
+          {errorMessage && (
+            <div className="mt-3 text-red-600 text-sm font-medium p-2 bg-red-50 rounded-md border border-red-200">
+              {errorMessage}
+            </div>
+          )}
         </form>
         <button
           type="button"

@@ -2,9 +2,11 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import AuthService from "../services/auth.service";
 import { CloudSun } from "lucide-react";
+import { useState } from "react";
 
 export default function Register() {
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
   const {
     register,
     handleSubmit,
@@ -13,10 +15,12 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     try {
+      setErrorMessage("");
       await AuthService.register(data);
       navigate("/login");
     } catch (e) {
-      alert("Something went wrong, check logs");
+      console.error("Registration error:", e);
+      setErrorMessage(e.message || "Registration failed. Please try again.");
     }
   };
 
@@ -69,6 +73,12 @@ export default function Register() {
           >
             Register
           </button>
+
+          {errorMessage && (
+            <div className="mt-3 text-red-600 text-sm font-medium p-2 bg-red-50 rounded-md border border-red-200">
+              {errorMessage}
+            </div>
+          )}
         </form>
         <button
           type="button"

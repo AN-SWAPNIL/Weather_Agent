@@ -1,4 +1,4 @@
-// filepath: /mnt/AN_Swapnil_D/Codes/SocioFi/Weather_Agent/server/controllers/audio.controller.js
+// filepath: d:\Codes\SocioFi\Weather_Agent\server\controllers\audio.controller.js
 import { transcribe, textToSpeech } from "../services/audio.service.js";
 import { queryExecutor } from "../controllers/weather.controller.js";
 import { StatusCodes } from "http-status-codes";
@@ -7,10 +7,44 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { config } from "dotenv";
+import { upload } from "./upload.controller.js";
 config(); // Load environment variables from .env file
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Handler for the /transcribe route - applies multer middleware before controller function
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const handleTranscribeAudio = [
+  upload.single("audio"),
+  async (req, res) => {
+    await transcribeAudio(req, res);
+  }
+];
+
+/**
+ * Handler for the /synthesize route
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const handleSynthesizeSpeech = async (req, res) => {
+  await synthesizeSpeech(req, res);
+};
+
+/**
+ * Handler for the /query route - applies multer middleware before controller function
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const handleAudioQuery = [
+  upload.single("audio"),
+  async (req, res) => {
+    await queryAudioFile(req, res);
+  }
+];
 
 /**
  * Controller for speech-to-text functionality
@@ -128,9 +162,6 @@ export const queryAudioFile = async (req, res) => {
     console.log(
       `Processing file upload audio query with sessionId: ${sessionId || "No sessionId provided"}`
     );
-    // if (Object.keys(additionalParams).length > 0) {
-    //   console.log("Additional parameters:", additionalParams);
-    // }
 
     // Check if audio file is provided
     if (!req.file) {
@@ -148,15 +179,7 @@ export const queryAudioFile = async (req, res) => {
       transcriptionResult = undefined;
     }
 
-    // if (!transcriptionResult.success) {
-    //   return res.status(StatusCodes.BAD_REQUEST).json({
-    //     success: false,
-    //     message: "Failed to transcribe audio",
-    //   });
-    // }
-
     const query = transcriptionResult?.transcript;
-    // const query = "What is the weather today?";
 
     console.log(
       `Processing weather query: "${query}" for user: ${req.user._id}`
@@ -285,39 +308,3 @@ export const queryAudioFile = async (req, res) => {
     });
   }
 };
-
-// export const queryAudioFile = async (req, res) => {
-//   try {
-//     const sessionId = req.body.sessionId;
-
-//     let weatherResponse = {
-//       sessionId: sessionId || null,
-//       sessionName: "Voice Query",
-//       update_time: new Date().toISOString(),
-//       location: req.user.location || "Unknown",
-//       message:
-//         "I'm sorry, I couldn't process your request at this moment. Please try again later.",
-//     };
-//     const fallbackPath = path.join(__dirname, "../data/record.wav");
-//     const audioData = fs.readFileSync(fallbackPath);
-//     weatherResponse.audio_reply = `data:audio/wav;base64,${audioData.toString("base64")}`;
-//     weatherResponse.audio_url = `/api/audio/data/record.wav`; // URL for direct access
-//     weatherResponse.audio_format = "wav"; // Explicitly specify WAV format
-//     const query = "What is the weather today?";
-
-//     const response = {
-//       ...weatherResponse,
-//       query: query,
-//     };
-
-//     // Return the combined response
-//     return res.status(StatusCodes.OK).json(response);
-//   } catch (error) {
-//     console.log("Error in file upload audio query:", error);
-//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-//       success: false,
-//       message: "Failed to process audio file query",
-//       error: error.message,
-//     });
-//   }
-// };

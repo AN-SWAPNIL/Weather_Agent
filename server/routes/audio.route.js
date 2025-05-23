@@ -1,10 +1,9 @@
 import express from "express";
 import {
-  transcribeAudio,
-  synthesizeSpeech,
-  queryAudioFile,
+  handleTranscribeAudio,
+  handleSynthesizeSpeech,
+  handleAudioQuery,
 } from "../controllers/audio.controller.js";
-import { upload } from "../controllers/upload.controller.js";
 import UserMiddleware from "../middlewares/user.middleware.js";
 
 const router = express.Router();
@@ -12,12 +11,12 @@ const router = express.Router();
 router.use(UserMiddleware);
 
 // Azure Speech to Text route
-router.post("/transcribe", upload.single("audio"), transcribeAudio);
+router.post("/transcribe", handleTranscribeAudio);
 
 // Azure Text to Speech route
-router.post("/synthesize", synthesizeSpeech);
+router.post("/synthesize", handleSynthesizeSpeech);
 
-// File upload audio query route (multipart/form-data)
-router.post("/query", upload.single("audio"), queryAudioFile);
+// File upload audio query route
+router.post("/query", handleAudioQuery);
 
 export default router;

@@ -288,7 +288,7 @@ export default function WeatherChatPage() {
         return;
 
       const success = await sessionApi.deleteSession(sessionId);
-      
+
       if (success) {
         setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
         if (selectedSession && selectedSession.sessionId === sessionId) {
@@ -317,13 +317,18 @@ export default function WeatherChatPage() {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-green-100 flex flex-col pt-14">
+        {" "}
         <Navbar
           user={user}
           tab={null}
           setTab={() => {}}
           onWeatherAIClick={() => setSidebarOpen(!sidebarOpen)}
         />{" "}
-        <div className="flex w-full max-w-5xl mx-auto gap-6 flex-1 p-4">
+        <div
+          className={`flex w-full max-w-5xl mx-auto flex-1 p-4 ${
+            sidebarOpen ? "gap-6" : ""
+          }`}
+        >
           <Sidebar
             open={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
@@ -369,9 +374,9 @@ export default function WeatherChatPage() {
         </div>
         <footer
           id="scroll-target"
-          className="mt-5 text-center text-gray-500 text-sm py-3 bg-white/50"
+          className="text-center text-gray-500 text-sm py-3 bg-white/50"
         >
-          Powered by OpenWeatherMap, Google Gemini, and Azure AI
+          Powered by OpenWeatherMap, Google Gemini and Azure AI
         </footer>
         {/* Toast container for notifications */}
         <ToastContainer toasts={toasts} removeToast={removeToast} />

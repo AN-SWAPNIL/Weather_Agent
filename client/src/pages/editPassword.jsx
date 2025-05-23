@@ -20,25 +20,42 @@ export default function EditPassword() {
     setLoading(true);
     setMessage("");
     const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:4000/users/password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        authorization: token,
-      },
-      body: JSON.stringify({ oldPassword, newPassword }),
-    });
-    if (response.ok) {
-      setMessage("Password updated successfully.");
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => navigate("/weather"), 1500);
-    } else {
-      const data = await response.json();
-      setMessage(data.message || "Failed to update password.");
+
+    try {
+      const response = await fetch("http://localhost:4000/users/password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          authorization: token,
+        },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+
+      if (response.ok) {
+        setMessage("Password updated successfully.");
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => navigate("/weather"), 1500);
+      } else {
+        // Try to get error message from response
+        try {
+          const data = await response.json();
+          setMessage(data.message || "Failed to update password.");
+        } catch (parseError) {
+          // If we can't parse the JSON response
+          setMessage(
+            `Server error (${response.status}): Failed to update password.`
+          );
+        }
+      }
+    } catch (error) {
+      // Network or connection error
+      console.error("Password update error:", error);
+      setMessage("Server unavailable. Please try again later.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -51,7 +68,15 @@ export default function EditPassword() {
           Change Password
         </h2>
         {message && (
-          <div className="mb-4 text-center text-sm text-red-500">{message}</div>
+          <div
+            className={`mb-4 text-sm p-2 rounded-md border ${
+              message === "Password updated successfully."
+                ? "bg-green-50 text-green-600 border-green-200"
+                : "bg-red-50 text-red-600 border-red-200"
+            }`}
+          >
+            {message}
+          </div>
         )}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Old Password</label>
