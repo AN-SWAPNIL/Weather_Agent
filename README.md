@@ -57,7 +57,7 @@ LANGSMITH_PROJECT=<YOUR_LANGSMITH_PROJECT>
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/AN-SWAPNIL/Weather_Agent.git
 cd Weather_Agent
 ```
 
@@ -104,15 +104,17 @@ npm run test-openweather
 
 ### Authentication
 
-- `POST /api/auth/register` — Register a new user
-- `POST /api/auth/login` — Log in and retrieve a JWT
-- `POST /api/auth/change-password` — Change password (authenticated)
+- `POST /users` — Register a new user
+- `POST /users/login` — Log in and retrieve a JWT
+- `PUT /users/editpassword` — Change password (authenticated)
+- `POST /users/location` — Update user's default location (authenticated)
 
 ### Weather
 
-- `GET /api/weather/current?city=<city>` — Get current weather
-- `GET /api/weather/forecast?city=<city>` — Get forecast weather
-- `GET /api/weather/history?city=<city>&start=<ISO>&end=<ISO>` — Get historical weather
+- `POST /api/query` — Make a conversational weather query with the given text input
+- `GET /api/history` — Get a list of user's sessions/conversations
+- `GET /api/history/:sessionId` — Get a specific conversation by ID
+- `DELETE /api/history/:sessionId` — Delete a conversation by ID
 
 ### Audio
 
@@ -130,6 +132,64 @@ npm run test-openweather
 - Ask weather questions in text or voice
 - View and manage your recent sessions in the sidebar
 - Change your password from the user menu
+
+---
+
+## Getting Started
+
+```bash
+# Visit http://localhost:5173 in your browser
+# Register a new account or login with existing credentials
+```
+
+### API Usage Examples
+
+#### User Authentication
+
+```bash
+# Register a new user
+curl -X POST http://localhost:4000/users -H "Content-Type: application/json" \
+  -d '{"name": "Your Name", "email": "your@email.com", "password": "yourpassword"}'
+
+# Login to get JWT token
+curl -X POST http://localhost:4000/users/login -H "Content-Type: application/json" \
+  -d '{"email": "your@email.com", "password": "yourpassword"}'
+```
+
+#### Weather Queries
+
+```bash
+# Make a weather query (replace YOUR_JWT_TOKEN with the token from login)
+curl -X POST http://localhost:4000/api/query -H "Content-Type: application/json" \
+  -H "Authorization: YOUR_JWT_TOKEN" \
+  -d '{"query": "Will it rain tomorrow?"}'
+
+# Get session history
+curl -X GET http://localhost:4000/api/history -H "Authorization: YOUR_JWT_TOKEN"
+
+# Get specific session by ID
+curl -X GET http://localhost:4000/api/history/YOUR_SESSION_ID -H "Authorization: YOUR_JWT_TOKEN"
+```
+
+#### Voice Interaction
+
+```bash
+# Transcribe audio to text
+curl -X POST http://localhost:4000/audio/transcribe \
+  -H "Authorization: YOUR_JWT_TOKEN" \
+  -F "audio=@./path/to/your/audio.wav"
+
+# Convert text to speech
+curl -X POST http://localhost:4000/audio/synthesize \
+  -H "Content-Type: application/json" \
+  -H "Authorization: YOUR_JWT_TOKEN" \
+  -d '{"text": "The weather forecast for tomorrow looks sunny."}'
+
+# Make a voice query (combines STT + weather API + TTS)
+curl -X POST http://localhost:4000/audio/query \
+  -H "Authorization: YOUR_JWT_TOKEN" \
+  -F "audio=@./path/to/your/audio.wav"
+```
 
 ---
 
@@ -158,4 +218,10 @@ server/                # Node.js/Express backend
 
 ## Developers
 
-- [@answapnil](https://github.com/AN-SWAPNIL)
+- [@answapnil](https://github.com/AN-SWAPNIL) - Project Lead & Full-stack Developer
+
+---
+
+## License
+
+MIT License - See LICENSE file for details
