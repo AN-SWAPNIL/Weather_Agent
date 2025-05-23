@@ -142,6 +142,7 @@ client/                # React frontend (Vite, TailwindCSS)
 │  ├─ components/      # Reusable UI components
 │  ├─ pages/           # Route-based pages
 │  └─ services/        # API service modules
+└─ App.js, main.js     # Client entry point
 
 server/                # Node.js/Express backend
 ├─ controllers/        # Route handlers
