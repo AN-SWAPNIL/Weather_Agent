@@ -8,13 +8,13 @@ import { ToastContainer, useToast } from "../components/ui/toast";
 import ChatContainer from "../components/ChatContainer";
 import ChatInput from "../components/ChatInput";
 import LocationSetting from "../components/LocationSetting";
-import SessionManager from "../components/SessionManager";
+import SessionManager from "../services/session.service";
 
 // Main component
 export default function WeatherChatPage() {
   const [user, setUser] = useState(null);
   const [location, setLocation] = useState("");
-  const [sessions, setSessions] = useState([]); // session list
+  const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null); // session object
   const [messages, setMessages] = useState([]); // messages for selected session
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ export default function WeatherChatPage() {
     if (userStr) {
       const user = JSON.parse(userStr);
       setUser(user);
-      setLocation(user.location || "");
+      // setLocation(user.location || "");
     }
   }, []);
 
@@ -161,10 +161,10 @@ export default function WeatherChatPage() {
 
       try {
         // Show loading message for audio
-        addToast({
-          message: "Processing your voice query...",
-          type: "info",
-        });
+        // addToast({
+        //   message: "Processing your voice query...",
+        //   type: "info",
+        // });
 
         const sessionId = selectedSession
           ? selectedSession.sessionId
@@ -172,7 +172,7 @@ export default function WeatherChatPage() {
         const data = await sessionApi.sendAudioQuery(audioBlob, sessionId);
 
         // console.log("Audio query response:", data.audio_reply);
-        
+
         // Remove the loading message
         setMessages((msgs) => msgs.filter((msg) => !msg.isAudioLoading));
 
@@ -357,7 +357,6 @@ export default function WeatherChatPage() {
         >
           Powered by OpenWeatherMap, Google Gemini, and Azure AI
         </footer>
-
 
         {/* Toast container for notifications */}
         <ToastContainer toasts={toasts} removeToast={removeToast} />

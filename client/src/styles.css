@@ -63,14 +63,17 @@
 }
 
 @keyframes recording-pulse {
-  0%,
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
   100% {
     transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
 
@@ -86,11 +89,11 @@
 
 @keyframes ripple {
   0% {
-    transform: scale(0.8);
-    opacity: 1;
+    transform: scale(0.5);
+    opacity: 0.5;
   }
   100% {
-    transform: scale(2);
+    transform: scale(1.8);
     opacity: 0;
   }
 }
@@ -125,5 +128,124 @@
   /* Ripple effect for speaker */
   .animate-ripple {
     animation: ripple 2s linear infinite;
+  }
+
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50;
+  }
+
+  .voice-modal {
+    @apply bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-xl;
+  }
+
+  .voice-modal-header {
+    @apply relative flex items-center justify-center py-4 border-b border-gray-100 dark:border-gray-700;
+  }
+
+  .voice-modal-close {
+    @apply absolute right-4 p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  }
+
+  .voice-modal-title {
+    @apply text-xl font-medium text-gray-800 dark:text-white;
+  }
+
+  .voice-modal-body {
+    @apply p-6 flex flex-col items-center gap-6;
+  }
+
+  .main-control {
+    @apply relative flex items-center justify-center;
+  }
+
+  .control-ring {
+    @apply w-40 h-40 rounded-full flex items-center justify-center;
+  }
+
+  .control-ring-idle {
+    @apply bg-blue-50 dark:bg-blue-900/20;
+  }
+
+  .control-ring-recording {
+    @apply bg-red-50 dark:bg-red-900/20;
+  }
+
+  .control-ring-processing {
+    @apply bg-yellow-50 dark:bg-yellow-900/20;
+  }
+
+  .control-ring-playing {
+    @apply bg-green-50 dark:bg-green-900/20;
+  }
+
+  .control-button-wrap {
+    @apply w-28 h-28 rounded-full flex items-center justify-center;
+  }
+
+  .control-button {
+    @apply rounded-full p-6 text-white shadow-lg transform transition-transform hover:scale-105 active:scale-95;
+  }
+
+  .control-button-idle {
+    @apply bg-blue-500 hover:bg-blue-600;
+  }
+
+  .control-button-recording {
+    @apply bg-red-500 hover:bg-red-600;
+  }
+
+  .control-button-processing {
+    @apply bg-yellow-500 hover:bg-yellow-600;
+  }
+
+  .control-button-playing {
+    @apply bg-green-500 hover:bg-green-600;
+  }
+
+  .status-indicator {
+    @apply absolute -bottom-12 text-sm font-medium py-1 px-4 rounded-full;
+  }
+
+  .status-indicator-recording {
+    @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300;
+  }
+
+  .status-indicator-processing {
+    @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300;
+  }
+
+  .status-indicator-playing {
+    @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300;
+  }
+
+  .conversation-container {
+    @apply w-full mt-4 bg-gray-50 dark:bg-gray-900 rounded-xl p-4 max-h-[250px] overflow-y-auto;
+  }
+
+  /* Animation for visualizing audio */
+  .sound-wave {
+    @apply flex items-center justify-center gap-1 mt-6;
+  }
+
+  .sound-bar {
+    @apply bg-green-400 dark:bg-green-500 rounded-full w-1.5;
+  }
+
+  /* Enhanced ripple effect */
+  .fancy-ripple {
+    @apply absolute inset-0 rounded-full opacity-0;
+    animation: ripple 2s ease-out infinite;
+  }
+
+  .fancy-ripple-1 {
+    animation-delay: 0s;
+  }
+
+  .fancy-ripple-2 {
+    animation-delay: 0.5s;
+  }
+
+  .fancy-ripple-3 {
+    animation-delay: 1s;
   }
 }

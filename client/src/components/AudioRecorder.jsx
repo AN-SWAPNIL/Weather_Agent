@@ -86,16 +86,18 @@ export default function AudioRecorder({
                   ? "data URI"
                   : "base64",
                 sample: response.audio_reply?.substring(0, 50) + "...",
-              });
-
-              // Clear any previous audio reference and response
+              }); // Clear any previous audio reference and response
               if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.removeAttribute("src");
-                audioRef.current.load();
+                if (audioRef.current.cleanup) {
+                  audioRef.current.cleanup();
+                } else {
+                  audioRef.current.pause();
+                  audioRef.current.removeAttribute("src");
+                  audioRef.current.load();
+                }
                 audioRef.current = null;
               }
-              setAudioResponse(null);
+              // setAudioResponse(null);
 
               // Verify we have valid audio data before proceeding
               if (!response.audio_reply || response.audio_reply.trim() === "") {
@@ -195,7 +197,7 @@ export default function AudioRecorder({
       startRecording();
     }
   }; // Playback control
-  
+
   const togglePlayback = () => {
     if (state === AudioRecorderState.PLAYING) {
       // When stopping playback, go to IDLE state
@@ -222,12 +224,16 @@ export default function AudioRecorder({
   }; // Handle closing the voice interaction modal
   const handleCloseModal = () => {
     if (state !== AudioRecorderState.RECORDING) {
-      // Clean up audio resources
+      // Clean up audio resources properly
       if (audioRef.current) {
-        // Full cleanup of audio element
-        audioRef.current.pause();
-        audioRef.current.removeAttribute("src");
-        audioRef.current.load(); // Important to apply the src change
+        if (audioRef.current.cleanup) {
+          audioRef.current.cleanup();
+        } else {
+          // Fallback cleanup for older audio elements
+          audioRef.current.pause();
+          audioRef.current.removeAttribute("src");
+          audioRef.current.load(); // Important to apply the src change
+        }
         audioRef.current = null;
       }
 

@@ -45,7 +45,7 @@ export default function Home() {
         </div>
       </div>
       <footer className="mt-8 text-gray-500 text-sm text-center">
-        Powered by OpenWeatherMap, Google Gemini, and ElevenLabs
+        Powered by OpenWeatherMap, Google Gemini, and Azure AI
       </footer>
     </div>
   );

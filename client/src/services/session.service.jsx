@@ -1,8 +1,8 @@
 import React from "react";
 
 /**
- * Component for managing all API-related session operations
- * This is not a UI component but a logic component that handles session management
+ * Service for managing all API-related session operations
+ * This is not a UI component but a logic module that handles session management
  */
 export default function SessionManager({ children }) {
   const loadSessions = async () => {

@@ -140,16 +140,22 @@ export const queryAudioFile = async (req, res) => {
       });
     }
 
-    const transcriptionResult = await transcribe(req.file);
-
-    if (!transcriptionResult.success) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: "Failed to transcribe audio",
-      });
+    let transcriptionResult;
+    try {
+      transcriptionResult = await transcribe(req.file);
+    } catch (error) {
+      console.error("Error in transcription:", error);
+      transcriptionResult = undefined;
     }
 
-    const query = transcriptionResult.transcript;
+    // if (!transcriptionResult.success) {
+    //   return res.status(StatusCodes.BAD_REQUEST).json({
+    //     success: false,
+    //     message: "Failed to transcribe audio",
+    //   });
+    // }
+
+    const query = transcriptionResult?.transcript;
     // const query = "What is the weather today?";
 
     console.log(
@@ -157,23 +163,35 @@ export const queryAudioFile = async (req, res) => {
     );
 
     // Delete the temporary audio file after transcription
-    fs.unlink(req.file.path, (err) => {
-      if (err) console.error("Error deleting temporary file:", err);
-    });
+    // fs.unlink(req.file.path, (err) => {
+    //   if (err) console.error("Error deleting temporary file:", err);
+    // });
 
     let weatherResponse;
-    try {
-      weatherResponse = await queryExecutor(req.user, sessionId, query);
-      console.log("Query processed successfully:", weatherResponse);
-    } catch (error) {
-      console.error("Error processing weather query:", error);
-      // Provide a fallback response when the weather query fails
+    if (query) {
+      try {
+        weatherResponse = await queryExecutor(req.user, sessionId, query);
+        console.log("Query processed successfully:", weatherResponse);
+      } catch (error) {
+        console.error("Error processing weather query:", error);
+        // Provide a fallback response when the weather query fails
+        weatherResponse = {
+          sessionId: sessionId || null,
+          sessionName: "Voice Query",
+          update_time: new Date().toISOString(),
+          location: req.user.location || "Unknown",
+          message:
+            "I'm sorry, I couldn't process your request at this moment. Please try again later.",
+        };
+      }
+    } else {
+      console.error("Transcription failed or returned empty string");
       weatherResponse = {
         sessionId: sessionId || null,
         sessionName: "Voice Query",
         update_time: new Date().toISOString(),
         location: req.user.location || "Unknown",
-        message: "I'm sorry, I couldn't process your request at this moment. Please try again later.",
+        message: "Sorry, I didn't hear that. Please try again.",
       };
     }
 
@@ -219,9 +237,9 @@ export const queryAudioFile = async (req, res) => {
         `Base64 conversion successful, length: ${base64Audio.length}`
       );
 
-      fs.unlink(audioFilePath, (err) => {
-        if (err) console.error("Error deleting audio file:", err);
-      });
+      // fs.unlink(audioFilePath, (err) => {
+      //   if (err) console.error("Error deleting audio file:", err);
+      // });
 
       // Include full data URI for better browser compatibility
       // Use explicit content type to ensure browsers handle it correctly
@@ -239,7 +257,9 @@ export const queryAudioFile = async (req, res) => {
         console.log("Using fallback audio file");
         const audioData = fs.readFileSync(fallbackPath);
         weatherResponse.audio_reply = `data:audio/wav;base64,${audioData.toString("base64")}`;
-        weatherResponse.message = process.env.TRY_AGAIN_MESSAGE || "Sorry, I didn't get that or there was an error. Please try again!!";
+        weatherResponse.message =
+          process.env.TRY_AGAIN_MESSAGE ||
+          "Sorry, I didn't get that or there was an error. Please try again!!";
         weatherResponse.audio_url = `/api/audio/try_again.wav`; // URL for direct access
         weatherResponse.audio_format = "wav"; // Explicitly specify WAV format
       } else {

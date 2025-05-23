@@ -14,7 +14,7 @@ export default function LocationSetting({
   return (
     <div className="mt-4 flex items-center justify-between bg-gray-50/50 p-3 rounded-lg">
       <span className="text-sm text-gray-600">
-        Default Location: Dhaka, Bangladesh
+        Default Location: {JSON.parse(window.localStorage.getItem("user")).location}
       </span>
       <div className="flex gap-2">
         <Input

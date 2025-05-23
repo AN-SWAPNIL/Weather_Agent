@@ -69,15 +69,6 @@ export const convertToWav = async (audioBuffer) => {
 
   return new Blob([buffer], { type: "audio/wav" });
 };
-export const convertToBlob = async (audioBase64) => {
-  const byteCharacters = atob(audioBase64);
-  const byteNumbers = new Array(byteCharacters.length);
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-  const byteArray = new Uint8Array(byteNumbers);
-  return new Blob([byteArray], { type: "audio/wav" });
-};
 
 // Enhanced function to process and convert the audio data to a playable format
 export const createAudioBlobFromBase64 = (audioBase64) => {
@@ -107,5 +98,91 @@ export const createAudioBlobFromBase64 = (audioBase64) => {
   } catch (error) {
     console.error("Error creating audio blob:", error);
     throw new Error("Failed to process audio data");
+  }
+};
+
+// Enhanced function to setup audio playback with proper state management
+export const setupAudioPlayback = (audioBase64, options = {}) => {
+  const {
+    onPlay = () => {},
+    onEnded = () => {},
+    onError = () => {},
+    autoPlay = false,
+  } = options;
+
+  try {
+    // Create audio blob from base64 data
+    const audioBlob = createAudioBlobFromBase64(audioBase64);
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    // Create new audio element
+    const audio = new Audio();
+
+    // Set up audio properties for better playback control
+    audio.preload = "auto";
+    audio.controls = false;
+
+    // Event handlers
+    const handlePlay = () => {
+      console.log("Audio playback started");
+      onPlay();
+    };
+
+    const handleEnded = () => {
+      console.log("Audio playback completed");
+      // Clean up the object URL to prevent memory leaks
+      URL.revokeObjectURL(audio.src);
+      onEnded();
+    };
+
+    const handleError = (error) => {
+      console.error("Audio playback error:", error);
+      // Clean up the object URL on error
+      URL.revokeObjectURL(audio.src);
+      onError(error);
+    };
+
+    const handleCanPlayThrough = () => {
+      console.log("Audio can play through without interruption");
+      // Only auto-play if requested and audio is ready
+      if (autoPlay) {
+        audio.play().catch(handleError);
+      }
+    };
+
+    // Add event listeners
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("canplaythrough", handleCanPlayThrough);
+
+    // Set the audio source
+    audio.src = audioUrl;
+
+    // Load the audio data
+    audio.load();
+
+    // Add cleanup method to the audio element
+    audio.cleanup = () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("canplaythrough", handleCanPlayThrough);
+
+      if (audio.src) {
+        URL.revokeObjectURL(audio.src);
+        audio.src = "";
+      }
+
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    };
+
+    return audio;
+  } catch (error) {
+    console.error("Error setting up audio playback:", error);
+    onError(error);
+    return null;
   }
 };
