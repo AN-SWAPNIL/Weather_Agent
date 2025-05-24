@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import AuthService from "../services/auth.service";
 
 export default function EditPassword() {
   const [oldPassword, setOldPassword] = useState("");
@@ -19,40 +20,16 @@ export default function EditPassword() {
     }
     setLoading(true);
     setMessage("");
-    const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch("http://localhost:4000/users/password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: token,
-        },
-        body: JSON.stringify({ oldPassword, newPassword }),
-      });
-
-      if (response.ok) {
-        setMessage("Password updated successfully.");
-        setOldPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => navigate("/weather"), 1500);
-      } else {
-        // Try to get error message from response
-        try {
-          const data = await response.json();
-          setMessage(data.message || "Failed to update password.");
-        } catch (parseError) {
-          // If we can't parse the JSON response
-          setMessage(
-            `Server error (${response.status}): Failed to update password.`
-          );
-        }
-      }
+      await AuthService.changePassword({ oldPassword, newPassword });
+      setMessage("Password updated successfully.");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => navigate("/weather"), 1500);
     } catch (error) {
-      // Network or connection error
-      console.error("Password update error:", error);
-      setMessage("Server unavailable. Please try again later.");
+      setMessage(error.message || "Failed to update password.");
     } finally {
       setLoading(false);
     }
