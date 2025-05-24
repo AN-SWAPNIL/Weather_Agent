@@ -325,7 +325,7 @@ export default function WeatherChatPage() {
           onWeatherAIClick={() => setSidebarOpen(!sidebarOpen)}
         />{" "}
         <div
-          className={`flex w-full max-w-5xl mx-auto flex-1 p-4 ${
+          className={`flex w-full max-w-5xl mx-auto flex-1 py-4 ${
             sidebarOpen ? "gap-6" : ""
           }`}
         >
@@ -374,7 +374,7 @@ export default function WeatherChatPage() {
         </div>
         <footer
           id="scroll-target"
-          className="text-center text-gray-500 text-sm py-3 bg-white/50"
+          className="text-center text-gray-500 text-sm pb-3 px-8 bg-white/50"
         >
           Powered by OpenWeatherMap, Google Gemini and Azure AI
         </footer>
