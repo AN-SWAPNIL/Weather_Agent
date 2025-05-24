@@ -374,7 +374,7 @@ export default function WeatherChatPage() {
         </div>
         <footer
           id="scroll-target"
-          className="text-center text-gray-500 text-sm pb-3 px-8 bg-white/50"
+          className="text-center text-gray-500 text-sm pb-2 w-full px-8 bg-white/50"
         >
           Powered by OpenWeatherMap, Google Gemini and Azure AI
         </footer>
