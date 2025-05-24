@@ -186,9 +186,9 @@ export const queryAudioFile = async (req, res) => {
     );
 
     // Delete the temporary audio file after transcription
-    // fs.unlink(req.file.path, (err) => {
-    //   if (err) console.error("Error deleting temporary file:", err);
-    // });
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Error deleting temporary file:", err);
+    });
 
     let weatherResponse;
     if (query) {
@@ -260,9 +260,10 @@ export const queryAudioFile = async (req, res) => {
         `Base64 conversion successful, length: ${base64Audio.length}`
       );
 
-      // fs.unlink(audioFilePath, (err) => {
-      //   if (err) console.error("Error deleting audio file:", err);
-      // });
+      // Clean up the audio file after processing
+      fs.unlink(audioFilePath, (err) => {
+        if (err) console.error("Error deleting audio file:", err);
+      });
 
       // Include full data URI for better browser compatibility
       // Use explicit content type to ensure browsers handle it correctly
