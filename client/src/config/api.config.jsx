@@ -18,7 +18,7 @@ const currentEnv = import.meta.env?.MODE || "development";
 
 // Export the configuration for the current environment
 const config = {
-  apiUrl: environments[currentEnv]?.baseURL || environments.development.baseURL,
+  apiUrl: environments[currentEnv]?.baseURL || environments.development.baseURL
 };
 
 export default config;
