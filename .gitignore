@@ -12,7 +12,9 @@ server/test/*.log
 
 # Data
 server/data/uploads/*
+!server/data/uploads/.gitkeep
 server/data/downloads/*
+!server/data/downloads/.gitkeep
 
 # Logs
 logs
